@@ -1,0 +1,306 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #1a1a2e; /* Dark space blue */
+    color: #e0e0e0;
+    font-family: 'Roboto', sans-serif;
+}
+
+#app-container {
+    width: 100%;
+    height: 100%;
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#rhythmCanvas {
+    display: block;
+    background-color: transparent; /* Canvas itself is transparent */
+}
+
+/* --- Menu Icon (Hamburger) --- */
+.menu-icon {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    width: 30px;
+    height: 22px;
+    cursor: pointer;
+    z-index: 1001;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.menu-icon span {
+    display: block;
+    width: 100%;
+    height: 3px;
+    background-color: #00c6ff; /* Bright cyan */
+    border-radius: 3px;
+    transition: all 0.3s ease-in-out;
+}
+
+.menu-icon.open span:nth-child(1) {
+    transform: translateY(9.5px) rotate(45deg);
+}
+.menu-icon.open span:nth-child(2) {
+    opacity: 0;
+}
+.menu-icon.open span:nth-child(3) {
+    transform: translateY(-9.5px) rotate(-45deg);
+}
+
+/* --- Controls Panel --- */
+.controls-panel {
+    position: absolute;
+    top: 0;
+    left: -350px; /* Start off-screen */
+    width: 320px;
+    height: 100%;
+    background-color: rgba(20, 20, 40, 0.95); /* Darker semi-transparent */
+    backdrop-filter: blur(5px);
+    padding: 20px;
+    padding-bottom: 60px; 
+    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
+    transition: left 0.3s ease-in-out;
+    z-index: 1000;
+    overflow-y: auto;
+    color: #f0f0f0;
+    box-sizing: border-box; 
+    display: flex;
+    flex-direction: column;
+}
+
+.controls-panel.open {
+    left: 0;
+}
+
+.controls-panel h2, .controls-panel h3 {
+    color: #00c6ff; 
+    font-family: 'Orbitron', sans-serif;
+    margin-top: 0;
+    text-align: center;
+    border-bottom: 1px solid #00c6ff30;
+    padding-bottom: 10px;
+    margin-bottom: 15px; 
+}
+.controls-panel h3 {
+    margin-top: 20px;
+    font-size: 1.2em;
+}
+
+.control-group {
+    margin-bottom: 15px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-size: 0.9em;
+    color: #b0b0b0;
+}
+
+.control-group input[type="number"],
+.control-group input[type="text"],
+.control-group select {
+    width: calc(100% - 12px);
+    padding: 8px;
+    background-color: #2a2a3e;
+    border: 1px solid #00c6ff50;
+    color: #e0e0e0;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+.control-group input[type="color"] {
+    width: 100%;
+    height: 30px;
+    padding: 0;
+    border: 1px solid #00c6ff50;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.control-group.pattern-management {
+    display: grid;
+    grid-template-columns: 1fr 2fr 1fr 1fr;
+    gap: 5px;
+    align-items: center;
+}
+.control-group.pattern-management select {
+    width: 100%;
+}
+
+
+button {
+    padding: 10px 15px;
+    background-color: #007bff; 
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    font-family: 'Roboto', sans-serif;
+}
+button:hover {
+    background-color: #0056b3;
+}
+button#addLayerBtn {
+    width: 100%;
+    background-color: #28a745; 
+}
+button#addLayerBtn:hover {
+    background-color: #1e7e34;
+}
+button.remove-layer-btn {
+    background-color: #dc3545; 
+    padding: 5px 8px;
+    font-size: 0.8em;
+}
+button.remove-layer-btn:hover {
+    background-color: #c82333;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #00c6ff30;
+    margin: 20px 0;
+}
+
+.layer-item {
+    background-color: #2f2f4f;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border-left: 3px solid #00c6ff;
+}
+.layer-item .control-group {
+    margin-bottom: 8px;
+}
+
+.layer-elements {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-top: 5px;
+}
+
+.layer-elements button {
+    min-width: 30px;
+    padding: 5px;
+    background-color: #4a4a6e;
+    border: 1px solid #6a6a8e;
+}
+.layer-elements button.active {
+    background-color: #00c6ff;
+    color: #1a1a2e;
+    border-color: #00a6df;
+}
+
+#fullscreenBtn {
+    width: 100%;
+    background-color: #6c757d; 
+    margin-top: auto; 
+}
+#fullscreenBtn:hover {
+    background-color: #545b62;
+}
+
+/* --- Mute/Solo Button Styles --- */
+.layer-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+.layer-actions button {
+    flex-grow: 1;
+    padding: 8px 10px;
+    font-size: 0.9em;
+}
+
+button.mute-layer-btn,
+button.solo-layer-btn {
+    background-color: #5a5a7e;
+}
+button.mute-layer-btn:hover,
+button.solo-layer-btn:hover {
+    background-color: #7a7a9e;
+}
+
+button.mute-layer-btn.active,
+button.solo-layer-btn.active {
+    background-color: #ffc107;
+    color: #1a1a2e;
+    font-weight: bold;
+}
+button.mute-layer-btn.active:hover,
+button.solo-layer-btn.active:hover {
+    background-color: #e0a800;
+}
+
+
+button#muteAllBtn {
+    width: 100%;
+    background-color: #6c757d;
+}
+button#muteAllBtn:hover {
+    background-color: #545b62;
+}
+button#muteAllBtn.active {
+    background-color: #dc3545;
+    color: white;
+    font-weight: bold;
+}
+button#muteAllBtn.active:hover {
+    background-color: #c82333;
+}
+
+/* --- Tab Styles --- */
+.tabs-nav {
+    display: flex;
+    margin-bottom: 15px; 
+    border-bottom: 1px solid #00c6ff30; 
+    flex-shrink: 0; 
+}
+
+.tab-button {
+    padding: 10px 15px;
+    cursor: pointer;
+    background-color: transparent;
+    border: none;
+    color: #b0b0b0;
+    font-size: 0.95em; 
+    font-family: 'Orbitron', sans-serif;
+    flex-grow: 1;
+    text-align: center;
+    border-bottom: 3px solid transparent;
+    transition: color 0.2s ease, border-color 0.2s ease;
+    outline: none; 
+}
+.tab-button:hover {
+    color: #00c6ff;
+    background-color: #2a2a3e20; 
+}
+.tab-button.active {
+    color: #00c6ff;
+    border-bottom-color: #00c6ff;
+}
+
+.tabs-content-container {
+    flex-grow: 1; 
+    overflow-y: auto; 
+}
+
+.tab-content {
+    display: none;
+    padding-top: 10px; 
+}
+.tab-content.active {
+    display: block;
+}

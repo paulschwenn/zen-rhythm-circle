@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Circle</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-container">
+        <canvas id="rhythmCanvas"></canvas>
+
+        <div id="menu-icon" class="menu-icon">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+
+        <div id="controls-panel" class="controls-panel">
+            <h2>Controls</h2>
+
+            <div class="tabs-nav">
+                <button class="tab-button active" data-tab="rhythmSettingsTab">Rhythm</button>
+                <button class="tab-button" data-tab="visualSettingsTab">Visuals</button>
+            </div>
+
+            <!-- Container for tab contents -->
+            <div class="tabs-content-container">
+                <div id="rhythmSettingsTab" class="tab-content active">
+                    <div class="control-group">
+                        <label for="patternName">Pattern Name:</label>
+                        <input type="text" id="patternName" value="MyRhythm">
+                    </div>
+                    <div class="control-group pattern-management">
+                        <button id="savePattern">Save</button>
+                        <select id="loadPatternSelect"></select>
+                        <button id="loadPattern">Load</button>
+                        <button id="deletePattern">Delete</button>
+                    </div>
+                    <hr>
+                    <div class="control-group">
+                        <label for="mainRegister">Main Register (BPM):</label>
+                        <input type="number" id="mainRegister" value="120" min="20" max="300">
+                    </div>
+                    <div class="control-group">
+                        <label for="beatsPerCycle">Beats per Cycle:</label>
+                        <input type="number" id="beatsPerCycle" value="8" min="1" max="64">
+                    </div>
+                    <hr>
+                    <h3>Rhythmic Layers</h3>
+                    <div id="layersContainer">
+                        <!-- Layers will be added here by JS -->
+                    </div>
+                    <button id="addLayerBtn">+ Add Layer</button>
+                </div>
+
+                <div id="visualSettingsTab" class="tab-content">
+                    <h3>Visual Settings</h3>
+                    <div class="control-group">
+                        <label for="dotBaseSizeFactorInput">Base Dot Size Factor (of Canvas Width):</label>
+                        <input type="number" id="dotBaseSizeFactorInput" value="0.008" min="0.001" max="0.05" step="0.0005">
+                    </div>
+                    <div class="control-group">
+                        <label for="dotPopMagnitudeInput">Active Dot Pop Scale:</label>
+                        <input type="number" id="dotPopMagnitudeInput" value="1.5" min="1.0" max="5.0" step="0.1">
+                    </div>
+                     <hr>
+                     <p style="font-size: 0.8em; color: #909090;">
+                        These visual settings are saved with each pattern.
+                     </p>
+                </div>
+            </div>
+            <!-- End of tabs-content-container -->
+            
+            <hr>
+            <div class="control-group">
+                <button id="muteAllBtn">Mute All Sounds</button>
+            </div>
+            <button id="fullscreenBtn" style="margin-top:15px;">Toggle Fullscreen</button> 
+
+        </div> <!-- End of controls-panel -->
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
