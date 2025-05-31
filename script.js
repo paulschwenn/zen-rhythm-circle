@@ -22,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const dotBaseSizeFactorInput = document.getElementById('dotBaseSizeFactorInput');
     const dotPopMagnitudeInput = document.getElementById('dotPopMagnitudeInput');
+    const showGhostElementsInput = document.getElementById('showGhostElementsInput'); // Added
 
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -400,6 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isGlobalMute: false,
         dotBaseSizeFactor: 0.02, 
         dotPopMagnitude: 1.5,
+        showGhostElements: false, // Added for ghost elements
         // Dragging state for layer elements
         isDraggingElements: false,
         dragLayerIndex: null,
@@ -458,19 +460,37 @@ document.addEventListener('DOMContentLoaded', () => {
             if (layerRadius > maxRadius + 1) return;
 
             for (let i = 0; i < layer.subdivisions; i++) {
+                const angle = (i / layer.subdivisions) * Math.PI * 2 - Math.PI / 2;
+                const x = centerX + layerRadius * Math.cos(angle);
+                const y = centerY + layerRadius * Math.sin(angle);
+
                 if (layer.activeElements[i]) {
-                    const angle = (i / layer.subdivisions) * Math.PI * 2 - Math.PI / 2;
                     let currentDotSize = dotBaseSize;
                     const popKey = `${layerIdx}-${i}`;
                     if (appState.dotPopStates[popKey] && appState.dotPopStates[popKey] > 0) {
                         const popProgress = appState.dotPopStates[popKey] / MAX_POP_DURATION;
                         currentDotSize *= (1 + (appState.dotPopMagnitude - 1) * Math.sin(popProgress * Math.PI));
                     }
-                    const x = centerX + layerRadius * Math.cos(angle);
-                    const y = centerY + layerRadius * Math.sin(angle);
                     ctx.beginPath();
                     ctx.arc(x, y, currentDotSize, 0, Math.PI * 2);
                     ctx.fillStyle = layer.color;
+                    ctx.fill();
+                } else if (appState.showGhostElements) {
+                    // Draw ghost element for inactive subdivisions if enabled
+                    ctx.beginPath();
+                    const ghostDotSize = dotBaseSize * 0.4; // Smaller size for ghost
+                    ctx.arc(x, y, ghostDotSize, 0, Math.PI * 2);
+                    // Use layer color with low opacity for ghost
+                    // Convert hex to rgba or use a fixed ghost color
+                    let ghostColor = layer.color + '33'; // Append alpha (e.g., '33' for ~20% opacity)
+                    try {
+                        // More robust way to set alpha if layer.color is hex
+                        const r = parseInt(layer.color.slice(1, 3), 16);
+                        const g = parseInt(layer.color.slice(3, 5), 16);
+                        const b = parseInt(layer.color.slice(5, 7), 16);
+                        ghostColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
+                    } catch (e) { /* fallback to simple append if color format is unexpected */ }
+                    ctx.fillStyle = ghostColor;
                     ctx.fill();
                 }
             }
@@ -930,7 +950,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 isSoloed: l.isSoloed
             })),
             dotBaseSizeFactor: appState.dotBaseSizeFactor,
-            dotPopMagnitude: appState.dotPopMagnitude
+            dotPopMagnitude: appState.dotPopMagnitude,
+            showGhostElements: appState.showGhostElements // Added
         };
     }
 
@@ -979,6 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appState.dotBaseSizeFactor = patternData.dotBaseSizeFactor || 0.02;
         appState.dotPopMagnitude = patternData.dotPopMagnitude || 1.5;
+        appState.showGhostElements = patternData.showGhostElements || false; // Added, default to false
 
         patternNameInput.value = appState.patternName;
         mainRegisterInput.value = appState.bpm;
@@ -986,6 +1008,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
+        showGhostElementsInput.checked = appState.showGhostElements; // Added
 
         renderLayersControls();
         draw();
@@ -1146,6 +1169,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    showGhostElementsInput.addEventListener('change', (e) => { // Added
+        appState.showGhostElements = e.target.checked;
+        draw();
+    });
+
     fullscreenBtn.addEventListener('click', () => {
         initAudioByUserGesture();
         toggleFullscreen();
@@ -1195,6 +1223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         beatsPerCycleInput.value = appState.beatsPerCycle;
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
+        showGhostElementsInput.checked = appState.showGhostElements; // Added
         
         // Set initial state for Play/Stop button
         playStopBtn.textContent = appState.isPlaying ? 'Stop Rhythm' : 'Play Rhythm';
