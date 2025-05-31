@@ -327,6 +327,23 @@ button#muteAllBtn.active:hover {
     background-color: var(--button-remove-hover);
 }
 
+/* Style for the new Play/Stop button */
+button#playStopBtn {
+    width: 100%;
+    background-color: var(--button-action-bg); /* Using action color for "Play" */
+}
+button#playStopBtn:hover {
+    background-color: var(--button-action-hover);
+}
+button#playStopBtn.active {
+    background-color: var(--accent-active); /* A distinct color for "Stop" (playing state) */
+    color: var(--bg-main); /* Ensure contrast for active state */
+}
+button#playStopBtn.active:hover {
+    background-color: var(--accent-primary); /* Slightly different hover for active state */
+}
+
+
 /* --- Mute/Solo Button Styles --- */
 .layer-actions {
     display: flex;

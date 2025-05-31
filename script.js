@@ -18,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const layersContainer = document.getElementById('layersContainer');
     const addLayerBtn = document.getElementById('addLayerBtn');
     const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const playStopBtn = document.getElementById('playStopBtn'); // Added
 
     const dotBaseSizeFactorInput = document.getElementById('dotBaseSizeFactorInput');
     const dotPopMagnitudeInput = document.getElementById('dotPopMagnitudeInput');
@@ -393,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
         layers: [],
         currentBeatTime: 0,
         lastFrameTime: performance.now(),
+        isPlaying: false, // Added: Playback state
         dotPopStates: {},
         buttonPopStates: {}, // Added for button pulsing
         isGlobalMute: false,
@@ -490,8 +492,34 @@ document.addEventListener('DOMContentLoaded', () => {
     function update(timestamp) {
         const deltaTime = (timestamp - appState.lastFrameTime) / 1000;
         appState.lastFrameTime = timestamp;
-        const cycleDuration = (60 / appState.bpm) * appState.beatsPerCycle;
-        appState.currentBeatTime = (appState.currentBeatTime + deltaTime) % cycleDuration;
+        
+        if (appState.isPlaying) { // Check if rhythm should be playing
+            const cycleDuration = (60 / appState.bpm) * appState.beatsPerCycle;
+            appState.currentBeatTime = (appState.currentBeatTime + deltaTime) % cycleDuration;
+
+            // --- REMOVE ANIMATION TRIGGER FROM HERE ---
+            // Instead, only check for sound triggers and call playHitSound (which now also triggers animation)
+            appState.layers.forEach((layer, layerIdx) => {
+                if (layer.subdivisions === 0) return;
+                for (let i = 0; i < layer.subdivisions; i++) {
+                    if (layer.activeElements[i]) {
+                        const elementHitTime = (i / layer.subdivisions) * cycleDuration;
+                        const prevHandTime = (appState.currentBeatTime - deltaTime + cycleDuration) % cycleDuration;
+                        let hit = false;
+                        if (prevHandTime <= appState.currentBeatTime) {
+                            if (elementHitTime >= prevHandTime && elementHitTime < appState.currentBeatTime) hit = true;
+                        } else {
+                            if (elementHitTime >= prevHandTime || elementHitTime < appState.currentBeatTime) hit = true;
+                        }
+                        if (hit) {
+                             // Only call playHitSound, which now also triggers animation
+                             playHitSound(layerIdx, i);
+                        }
+                    }
+                }
+            });
+            // --- END REMOVAL ---
+        }
 
         // Only decrement pop states, do not trigger them here
         for (const key in appState.dotPopStates) {
@@ -513,29 +541,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-
-        // --- REMOVE ANIMATION TRIGGER FROM HERE ---
-        // Instead, only check for sound triggers and call playHitSound (which now also triggers animation)
-        appState.layers.forEach((layer, layerIdx) => {
-            if (layer.subdivisions === 0) return;
-            for (let i = 0; i < layer.subdivisions; i++) {
-                if (layer.activeElements[i]) {
-                    const elementHitTime = (i / layer.subdivisions) * cycleDuration;
-                    const prevHandTime = (appState.currentBeatTime - deltaTime + cycleDuration) % cycleDuration;
-                    let hit = false;
-                    if (prevHandTime <= appState.currentBeatTime) {
-                        if (elementHitTime >= prevHandTime && elementHitTime < appState.currentBeatTime) hit = true;
-                    } else {
-                        if (elementHitTime >= prevHandTime || elementHitTime < appState.currentBeatTime) hit = true;
-                    }
-                    if (hit) {
-                         // Only call playHitSound, which now also triggers animation
-                         playHitSound(layerIdx, i);
-                    }
-                }
-            }
-        });
-        // --- END REMOVAL ---
 
         draw();
         requestAnimationFrame(update);
@@ -896,6 +901,21 @@ document.addEventListener('DOMContentLoaded', () => {
         muteAllBtn.textContent = appState.isGlobalMute ? "Unmute All Sounds" : "Mute All Sounds";
     }
 
+    function handlePlayStop() {
+        if (!audioInitialized) {
+            initAudioByUserGesture();
+        }
+        appState.isPlaying = !appState.isPlaying;
+        if (appState.isPlaying) {
+            appState.lastFrameTime = performance.now(); // Reset lastFrameTime to prevent a large jump
+            playStopBtn.textContent = 'Stop Rhythm';
+            playStopBtn.classList.add('active');
+        } else {
+            playStopBtn.textContent = 'Play Rhythm';
+            playStopBtn.classList.remove('active');
+        }
+    }
+
     function getPatternDataForSave() {
         return {
             patternName: appState.patternName, // Use current appState.patternName
@@ -1076,6 +1096,7 @@ document.addEventListener('DOMContentLoaded', () => {
         handleAddLayer();
     });
     muteAllBtn.addEventListener('click', handleMuteAll);
+    playStopBtn.addEventListener('click', handlePlayStop); // Added
     
     patternNameInput.addEventListener('change', (e) => {
         // Only update appState.patternName if user explicitly saves or downloads
@@ -1139,10 +1160,28 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('touchend', handleDragEnd);
         document.addEventListener('touchcancel', handleDragEnd);
 
-        // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
-        // Or try to load the last used pattern name if available (more complex, not implemented here)
-        if (appState.layers.length === 0) {
-             handleAddLayer(); // Add one layer
+            // Add global keydown listener for space bar play/stop
+            document.addEventListener('keydown', (event) => {
+                if (event.code === 'Space') {
+                // Only handle play/stop if focus is not in a text input
+                const activeElement = document.activeElement;
+                const isTextInput = activeElement && (
+                    activeElement.tagName === 'INPUT' && 
+                    (activeElement.type === 'text' || activeElement.type === 'number') ||
+                    activeElement.tagName === 'TEXTAREA'
+                );
+                
+                if (!isTextInput) {
+                    event.preventDefault(); // Prevent default space bar action (e.g., scrolling)
+                    handlePlayStop();
+                }
+                }
+            });
+
+            // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
+            // Or try to load the last used pattern name if available (more complex, not implemented here)
+            if (appState.layers.length === 0) {
+                 handleAddLayer(); // Add one layer
              if(appState.layers.length > 0){
                 appState.layers[0].subdivisions = 8;
                 appState.layers[0].activeElements = [true,false,true,false,true,false,true,false];
@@ -1157,6 +1196,14 @@ document.addEventListener('DOMContentLoaded', () => {
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
         
+        // Set initial state for Play/Stop button
+        playStopBtn.textContent = appState.isPlaying ? 'Stop Rhythm' : 'Play Rhythm';
+        if (appState.isPlaying) {
+            playStopBtn.classList.add('active');
+        } else {
+            playStopBtn.classList.remove('active');
+        }
+
         renderLayersControls();
         resizeCanvas();
         requestAnimationFrame(update);
