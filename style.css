@@ -1,12 +1,37 @@
+/* Import Roboto weights */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+:root {
+    --bg-main: #2C3333; /* Deep, desaturated teal-ish grey */
+    --bg-panel: #393E46; /* Slightly lighter, warmer grey */
+    --text-primary: #E0E0E0; /* Off-white */
+    --text-secondary: #B0B0B0; /* Lighter grey for labels, muted text */
+    --accent-primary: #76ABAE; /* Soft, muted teal */
+    --accent-primary-hover: #8bc1c4; /* Lighter teal for hover */
+    --accent-active: #A2D2D2; /* Even lighter for active states or highlights */
+    --border-color: #4A505A; /* Subtle border color */
+    --input-bg: #2a2a3e; /* Kept similar for now, could be --bg-main slightly lighter */
+    --button-remove-bg: #E07A5F; /* Muted red for remove/delete */
+    --button-remove-hover: #d96a4f;
+    --button-action-bg: #76ABAE; /* Accent for primary actions (add layer) */
+    --button-action-hover: #8bc1c4;
+    --button-secondary-bg: #4F5660; /* For general buttons (save, load) */
+    --button-secondary-hover: #606770;
+    --button-mute-solo-active: #F4D06F; /* Muted yellow for active mute/solo */
+    --button-mute-solo-active-hover: #e9c46a;
+    --font-family-main: 'Roboto', sans-serif;
+}
+
 body, html {
     margin: 0;
     padding: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background-color: #1a1a2e; /* Dark space blue */
-    color: #e0e0e0;
-    font-family: 'Roboto', sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+    font-family: var(--font-family-main);
+    font-weight: 400; /* Regular weight as base */
 }
 
 #app-container {
@@ -20,7 +45,7 @@ body, html {
 
 #rhythmCanvas {
     display: block;
-    background-color: transparent; /* Canvas itself is transparent */
+    background-color: transparent;
 }
 
 /* --- Menu Icon (Hamburger) --- */
@@ -40,8 +65,8 @@ body, html {
 .menu-icon span {
     display: block;
     width: 100%;
-    height: 3px;
-    background-color: #00c6ff; /* Bright cyan */
+    height: 3px; /* Slightly thicker for better visibility */
+    background-color: var(--accent-primary);
     border-radius: 3px;
     transition: all 0.3s ease-in-out;
 }
@@ -60,19 +85,18 @@ body, html {
 .controls-panel {
     position: absolute;
     top: 0;
-    left: -350px; /* Start off-screen */
-    width: 320px;
+    left: -360px; /* Slightly wider panel */
+    width: 350px;  /* Slightly wider panel */
     height: 100%;
-    background-color: rgba(20, 20, 40, 0.95); /* Darker semi-transparent */
-    backdrop-filter: blur(5px);
-    padding: 20px;
-    padding-bottom: 60px; 
-    box-shadow: 5px 0 15px rgba(0, 0, 0, 0.5);
-    transition: left 0.3s ease-in-out;
+    background-color: var(--bg-panel);
+    backdrop-filter: blur(3px); /* Softer blur */
+    padding: 25px; /* More padding */
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3); /* Softer shadow */
+    transition: left 0.35s ease-in-out;
     z-index: 1000;
     overflow-y: auto;
-    color: #f0f0f0;
-    box-sizing: border-box; 
+    color: var(--text-primary);
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
 }
@@ -81,55 +105,79 @@ body, html {
     left: 0;
 }
 
-.controls-panel h2, .controls-panel h3 {
-    color: #00c6ff; 
-    font-family: 'Orbitron', sans-serif;
+.controls-panel h2 {
+    color: var(--text-primary);
+    font-family: var(--font-family-main);
+    font-weight: 500; /* Medium weight for main title */
+    font-size: 1.8em; /* Larger main title */
     margin-top: 0;
     text-align: center;
-    border-bottom: 1px solid #00c6ff30;
-    padding-bottom: 10px;
-    margin-bottom: 15px; 
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 15px;
+    margin-bottom: 20px;
 }
 .controls-panel h3 {
-    margin-top: 20px;
-    font-size: 1.2em;
+    color: var(--accent-primary);
+    font-family: var(--font-family-main);
+    font-weight: 400; /* Regular weight */
+    font-size: 1.3em;
+    margin-top: 25px;
+    margin-bottom: 15px;
+    text-align: left; /* Align section headers left */
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border-color);
 }
 
 .control-group {
-    margin-bottom: 15px;
+    margin-bottom: 18px; /* Increased spacing */
 }
 
 .control-group label {
     display: block;
-    margin-bottom: 5px;
+    margin-bottom: 8px; /* Increased spacing */
     font-size: 0.9em;
-    color: #b0b0b0;
+    color: var(--text-secondary);
+    font-weight: 300; /* Lighter weight for labels */
 }
 
 .control-group input[type="number"],
 .control-group input[type="text"],
 .control-group select {
-    width: calc(100% - 12px);
-    padding: 8px;
-    background-color: #2a2a3e;
-    border: 1px solid #00c6ff50;
-    color: #e0e0e0;
-    border-radius: 4px;
+    width: 100%; /* Simpler width calculation */
+    padding: 10px; /* More padding */
+    background-color: var(--input-bg);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    border-radius: 5px; /* Slightly more rounded */
     box-sizing: border-box;
+    font-size: 0.95em;
 }
 .control-group input[type="color"] {
     width: 100%;
-    height: 30px;
+    height: 35px; /* Taller color input */
     padding: 0;
-    border: 1px solid #00c6ff50;
-    border-radius: 4px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
     cursor: pointer;
+    -webkit-appearance: none; /* Try to remove default styling */
+    -moz-appearance: none;
+    appearance: none;
+    background-color: transparent; /* Make custom styling more visible */
 }
+/* For Webkit browsers to style the color swatch */
+.control-group input[type="color"]::-webkit-color-swatch-wrapper {
+    padding: 0;
+}
+.control-group input[type="color"]::-webkit-color-swatch {
+    border: none;
+    border-radius: 4px;
+}
+
 
 .control-group.pattern-management {
     display: grid;
-    grid-template-columns: 1fr 2fr 1fr 1fr;
-    gap: 5px;
+    grid-template-columns: 1fr 1.5fr 1fr 1fr; /* Adjust column widths */
+    gap: 8px;
     align-items: center;
 }
 .control-group.pattern-management select {
@@ -139,168 +187,190 @@ body, html {
 
 button {
     padding: 10px 15px;
-    background-color: #007bff; 
-    color: white;
+    color: var(--text-primary);
     border: none;
-    border-radius: 4px;
+    border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.2s ease;
-    font-family: 'Roboto', sans-serif;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    font-family: var(--font-family-main);
+    font-weight: 400;
+    background-color: var(--button-secondary-bg);
 }
 button:hover {
-    background-color: #0056b3;
+    background-color: var(--button-secondary-hover);
 }
+button:active {
+    transform: translateY(1px); /* Subtle press effect */
+}
+
 button#addLayerBtn {
+    background-color: var(--button-action-bg);
     width: 100%;
-    background-color: #28a745; 
 }
 button#addLayerBtn:hover {
-    background-color: #1e7e34;
+    background-color: var(--button-action-hover);
 }
 button.remove-layer-btn {
-    background-color: #dc3545; 
-    padding: 5px 8px;
-    font-size: 0.8em;
+    background-color: var(--button-remove-bg);
+    padding: 6px 10px;
+    font-size: 0.85em;
 }
 button.remove-layer-btn:hover {
-    background-color: #c82333;
+    background-color: var(--button-remove-hover);
 }
 
 hr {
     border: none;
-    border-top: 1px solid #00c6ff30;
-    margin: 20px 0;
+    border-top: 1px solid var(--border-color);
+    margin: 25px 0; /* More spacing */
 }
 
 .layer-item {
-    background-color: #2f2f4f;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 5px;
-    border-left: 3px solid #00c6ff;
+    background-color: rgba(0,0,0,0.1); /* Darker, more subtle item background */
+    padding: 15px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    border-left: 4px solid var(--accent-primary);
 }
 .layer-item .control-group {
-    margin-bottom: 8px;
+    margin-bottom: 12px;
 }
 
 .layer-elements {
     display: flex;
     flex-wrap: wrap;
-    gap: 5px;
-    margin-top: 5px;
+    gap: 6px;
+    margin-top: 8px;
 }
 
 .layer-elements button {
-    min-width: 30px;
-    padding: 5px;
-    background-color: #4a4a6e;
-    border: 1px solid #6a6a8e;
+    min-width: 32px; /* Slightly larger */
+    padding: 6px;
+    background-color: var(--button-secondary-bg);
+    border: 1px solid var(--border-color);
+    font-size: 0.9em;
 }
 .layer-elements button.active {
-    background-color: #00c6ff;
-    color: #1a1a2e;
-    border-color: #00a6df;
+    background-color: var(--accent-primary);
+    color: var(--bg-main); /* Dark text on light accent */
+    border-color: var(--accent-primary-hover);
+    font-weight: 500;
 }
 
-#fullscreenBtn {
+#fullscreenBtn, button#muteAllBtn {
     width: 100%;
-    background-color: #6c757d; 
-    margin-top: auto; 
+    background-color: var(--button-secondary-bg);
+    margin-top: 10px; /* Spacing between them */
 }
-#fullscreenBtn:hover {
-    background-color: #545b62;
+#fullscreenBtn:hover, button#muteAllBtn:hover {
+    background-color: var(--button-secondary-hover);
+}
+
+button#muteAllBtn.active {
+    background-color: var(--button-remove-bg);
+    color: var(--text-primary);
+}
+button#muteAllBtn.active:hover {
+    background-color: var(--button-remove-hover);
 }
 
 /* --- Mute/Solo Button Styles --- */
 .layer-actions {
     display: flex;
     gap: 10px;
-    margin-top: 10px;
-    margin-bottom: 10px;
+    margin-top: 12px;
+    margin-bottom: 12px;
 }
 .layer-actions button {
     flex-grow: 1;
     padding: 8px 10px;
     font-size: 0.9em;
-}
-
-button.mute-layer-btn,
-button.solo-layer-btn {
-    background-color: #5a5a7e;
-}
-button.mute-layer-btn:hover,
-button.solo-layer-btn:hover {
-    background-color: #7a7a9e;
+    background-color: var(--button-secondary-bg);
 }
 
 button.mute-layer-btn.active,
 button.solo-layer-btn.active {
-    background-color: #ffc107;
-    color: #1a1a2e;
-    font-weight: bold;
+    background-color: var(--button-mute-solo-active);
+    color: var(--bg-main); /* Dark text */
+    font-weight: 500;
 }
 button.mute-layer-btn.active:hover,
 button.solo-layer-btn.active:hover {
-    background-color: #e0a800;
-}
-
-
-button#muteAllBtn {
-    width: 100%;
-    background-color: #6c757d;
-}
-button#muteAllBtn:hover {
-    background-color: #545b62;
-}
-button#muteAllBtn.active {
-    background-color: #dc3545;
-    color: white;
-    font-weight: bold;
-}
-button#muteAllBtn.active:hover {
-    background-color: #c82333;
+    background-color: var(--button-mute-solo-active-hover);
 }
 
 /* --- Tab Styles --- */
 .tabs-nav {
     display: flex;
-    margin-bottom: 15px; 
-    border-bottom: 1px solid #00c6ff30; 
-    flex-shrink: 0; 
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0;
 }
 
 .tab-button {
-    padding: 10px 15px;
+    padding: 12px 18px; /* More padding */
     cursor: pointer;
     background-color: transparent;
     border: none;
-    color: #b0b0b0;
-    font-size: 0.95em; 
-    font-family: 'Orbitron', sans-serif;
+    color: var(--text-secondary);
+    font-size: 1em;
+    font-family: var(--font-family-main);
+    font-weight: 400; /* Regular weight */
     flex-grow: 1;
     text-align: center;
     border-bottom: 3px solid transparent;
     transition: color 0.2s ease, border-color 0.2s ease;
-    outline: none; 
+    outline: none;
 }
 .tab-button:hover {
-    color: #00c6ff;
-    background-color: #2a2a3e20; 
+    color: var(--accent-primary-hover);
+    /* background-color: rgba(0,0,0,0.05); */ /* Subtle hover on tab */
 }
 .tab-button.active {
-    color: #00c6ff;
-    border-bottom-color: #00c6ff;
+    color: var(--accent-primary);
+    font-weight: 500; /* Medium weight for active tab */
+    border-bottom-color: var(--accent-primary);
 }
 
 .tabs-content-container {
-    flex-grow: 1; 
-    overflow-y: auto; 
+    flex-grow: 1;
+    overflow-y: auto;
 }
 
 .tab-content {
     display: none;
-    padding-top: 10px; 
+    padding-top: 5px; /* Less padding, headers have margin now */
 }
 .tab-content.active {
     display: block;
+}
+
+/* Ensure last items in panel are visible */
+.controls-panel > button:last-child {
+    margin-top: auto; /* Pushes fullscreen to bottom if panel is flex-column */
+    margin-bottom: 5px; /* ensure some space at the very bottom */
+}
+.controls-panel > hr:nth-last-of-type(2) { /* The HR before Mute All button */
+    margin-top: auto; /* Help push Mute All and Fullscreen down */
+}
+
+
+/* Scrollbar styling for a more modern look (Webkit) */
+.controls-panel::-webkit-scrollbar,
+.tabs-content-container::-webkit-scrollbar {
+    width: 8px;
+}
+.controls-panel::-webkit-scrollbar-track,
+.tabs-content-container::-webkit-scrollbar-track {
+    background: rgba(0,0,0,0.1);
+    border-radius: 4px;
+}
+.controls-panel::-webkit-scrollbar-thumb,
+.tabs-content-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 4px;
+}
+.controls-panel::-webkit-scrollbar-thumb:hover,
+.tabs-content-container::-webkit-scrollbar-thumb:hover {
+    background: var(--accent-primary);
 }
