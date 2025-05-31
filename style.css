@@ -297,11 +297,18 @@ hr {
     font-size: 0.9em;
 }
 .layer-elements button.active {
-    background-color: var(--accent-primary);
-    color: var(--bg-main); /* Dark text on light accent */
-    border-color: var(--accent-primary-hover);
+    /* background-color: var(--accent-primary); */ /* Will be set by inline style */
+    /* color: var(--bg-main); */ /* Will be set by inline style for contrast */
+    /* border-color: var(--accent-primary-hover); */ /* Will be set by inline style to match background */
     font-weight: 500;
 }
+
+.layer-elements button.popping {
+    transform: scale(1.15);
+    background-color: var(--accent-active); /* Brighter color for pop */
+    transition: transform 0.05s ease-out, background-color 0.05s ease-out;
+}
+
 
 #fullscreenBtn, button#muteAllBtn {
     width: 100%;

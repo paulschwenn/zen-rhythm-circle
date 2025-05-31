@@ -381,12 +381,30 @@ document.addEventListener('DOMContentLoaded', () => {
         currentBeatTime: 0,
         lastFrameTime: performance.now(),
         dotPopStates: {},
+        buttonPopStates: {}, // Added for button pulsing
         isGlobalMute: false,
-        dotBaseSizeFactor: 0.02, // Updated default based on HTML
-        dotPopMagnitude: 1.5      // Updated default based on HTML
+        dotBaseSizeFactor: 0.02, 
+        dotPopMagnitude: 1.5,
+        // Dragging state for layer elements
+        isDraggingElements: false,
+        dragLayerIndex: null,
+        dragTargetState: false 
     };
 
     const MAX_POP_DURATION = 0.15;
+    const MAX_BUTTON_POP_DURATION = 0.15; // Duration for button pop effect
+
+    // Helper function to get contrasting text color (black or white)
+    function getContrastingTextColor(hexColor) {
+        if (!hexColor) return '#000000'; // Default to black if color is invalid
+        const hex = hexColor.replace('#', '');
+        const r = parseInt(hex.substring(0, 2), 16);
+        const g = parseInt(hex.substring(2, 4), 16);
+        const b = parseInt(hex.substring(4, 6), 16);
+        // Calculate luminance (per WCAG)
+        const luminance = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+        return luminance > 0.5 ? '#000000' : '#FFFFFF';
+    }
 
     function resizeCanvas() {
         const panelWidth = controlsPanel.classList.contains('open') ? controlsPanel.offsetWidth : 0;
@@ -468,6 +486,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (appState.dotPopStates[key] <= 0) delete appState.dotPopStates[key];
             }
         }
+
+        // Manage button pop states
+        for (const key in appState.buttonPopStates) {
+            if (appState.buttonPopStates[key] > 0) {
+                appState.buttonPopStates[key] -= deltaTime;
+                if (appState.buttonPopStates[key] <= 0) {
+                    delete appState.buttonPopStates[key];
+                    // Remove popping class from button
+                    const [layerIdx, elIdx] = key.split('-').map(Number);
+                    const button = document.querySelector(`.layer-elements button[data-layer-index="${layerIdx}"][data-el-index="${elIdx}"]`);
+                    if (button) {
+                        button.classList.remove('popping');
+                    }
+                }
+            }
+        }
         
         appState.layers.forEach((layer, layerIdx) => {
             if (layer.subdivisions === 0) return;
@@ -483,6 +517,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (hit) {
                          appState.dotPopStates[`${layerIdx}-${i}`] = MAX_POP_DURATION;
+                         appState.buttonPopStates[`${layerIdx}-${i}`] = MAX_BUTTON_POP_DURATION;
+                         
+                         // Add popping class to button
+                         const button = document.querySelector(`.layer-elements button[data-layer-index="${layerIdx}"][data-el-index="${i}"]`);
+                         if (button) {
+                             button.classList.add('popping');
+                         }
                          playHitSound(layerIdx);
                     }
                 }
@@ -554,7 +595,8 @@ document.addEventListener('DOMContentLoaded', () => {
             layerItem.querySelector('.solo-layer-btn').addEventListener('click', handleSoloLayer);
             
             layerItem.querySelectorAll(`#layerElements-${index} button`).forEach(btn => {
-                btn.addEventListener('click', handleLayerElementToggle);
+                btn.addEventListener('mousedown', handleLayerElementMouseDown); // Changed from click to mousedown
+                btn.addEventListener('mouseenter', handleLayerElementMouseEnter);
             });
         });
         muteAllBtn.classList.toggle('active', appState.isGlobalMute);
@@ -564,8 +606,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderLayerElementButtons(layer, layerIndex) {
         let buttonsHtml = '';
+        const contrastingTextColor = getContrastingTextColor(layer.color);
         for (let i = 0; i < layer.subdivisions; i++) {
-            buttonsHtml += `<button class="${layer.activeElements[i] ? 'active' : ''}" data-layer-index="${layerIndex}" data-el-index="${i}">${i + 1}</button>`;
+            let style = '';
+            if (layer.activeElements[i]) {
+                style = `style="background-color: ${layer.color}; color: ${contrastingTextColor}; border-color: ${layer.color};"`;
+            }
+            buttonsHtml += `<button class="${layer.activeElements[i] ? 'active' : ''}" data-layer-index="${layerIndex}" data-el-index="${i}" ${style}>${i + 1}</button>`;
         }
         return buttonsHtml;
     }
@@ -576,7 +623,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (container) {
             container.innerHTML = renderLayerElementButtons(layer, layerIndex);
             container.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('click', handleLayerElementToggle);
+                btn.addEventListener('mousedown', handleLayerElementMouseDown); // Changed from click to mousedown
+                btn.addEventListener('mouseenter', handleLayerElementMouseEnter);
             });
         }
     }
@@ -674,7 +722,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleLayerColorChange(event) {
         const index = parseInt(event.target.dataset.index);
         appState.layers[index].color = event.target.value;
-        draw();
+        updateLayerElementButtons(index); // Re-render buttons to apply new color
+        // No need to call draw() here if updateLayerElementButtons doesn't change visual state that draw() depends on beyond button appearance
+        draw(); // Keep draw if layer color itself is used in canvas drawing directly, which it is.
     }
 
     function handleLayerSoundChange(event) {
@@ -686,9 +736,50 @@ document.addEventListener('DOMContentLoaded', () => {
         const layerIndex = parseInt(event.target.dataset.layerIndex);
         const elIndex = parseInt(event.target.dataset.elIndex);
         appState.layers[layerIndex].activeElements[elIndex] = !appState.layers[layerIndex].activeElements[elIndex];
-        event.target.classList.toggle('active');
+        // event.target.classList.toggle('active'); // This will be handled by updateLayerElementButtons
+        updateLayerElementButtons(layerIndex); // Re-render buttons for this layer
         draw();
     }
+
+    function handleLayerElementMouseDown(event) {
+        const layerIndex = parseInt(event.target.dataset.layerIndex);
+        const elIndex = parseInt(event.target.dataset.elIndex);
+
+        // Toggle the state of the clicked element
+        appState.layers[layerIndex].activeElements[elIndex] = !appState.layers[layerIndex].activeElements[elIndex];
+        
+        // Start dragging
+        appState.isDraggingElements = true;
+        appState.dragLayerIndex = layerIndex;
+        appState.dragTargetState = appState.layers[layerIndex].activeElements[elIndex];
+
+        updateLayerElementButtons(layerIndex); // Update all buttons in this layer
+        draw();
+    }
+
+    function handleLayerElementMouseEnter(event) {
+        if (!appState.isDraggingElements) return;
+
+        const layerIndex = parseInt(event.target.dataset.layerIndex);
+        const elIndex = parseInt(event.target.dataset.elIndex);
+
+        if (layerIndex === appState.dragLayerIndex) {
+            if (appState.layers[layerIndex].activeElements[elIndex] !== appState.dragTargetState) {
+                appState.layers[layerIndex].activeElements[elIndex] = appState.dragTargetState;
+                updateLayerElementButtons(layerIndex); // Update all buttons in this layer
+                draw();
+            }
+        }
+    }
+
+    function handleGlobalMouseUp() {
+        if (appState.isDraggingElements) {
+            appState.isDraggingElements = false;
+            appState.dragLayerIndex = null;
+            // dragTargetState can remain, it's not harmful
+        }
+    }
+
 
     function handleFillLayerElements(event) {
         const index = parseInt(event.target.dataset.index);
@@ -977,6 +1068,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         loadPatternList(); // Load saved local patterns first
         
+        // Add global mouseup listener
+        document.addEventListener('mouseup', handleGlobalMouseUp);
+
         // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
         // Or try to load the last used pattern name if available (more complex, not implemented here)
         if (appState.layers.length === 0) {
