@@ -17,6 +17,8 @@
     --button-action-hover: #8bc1c4;
     --button-secondary-bg: #4F5660; /* For general buttons (save, load) */
     --button-secondary-hover: #606770;
+    --button-tertiary-bg: #40464E; /* For less prominent actions like Fill/Clear */
+    --button-tertiary-hover: #505760;
     --button-mute-solo-active: #F4D06F; /* Muted yellow for active mute/solo */
     --button-mute-solo-active-hover: #e9c46a;
     --font-family-main: 'Roboto', sans-serif;
@@ -90,7 +92,7 @@ body, html {
     height: 100%;
     background-color: var(--bg-panel);
     backdrop-filter: blur(3px); /* Softer blur */
-    padding: 25px; /* More padding */
+    padding: 5px; /* More padding */
     box-shadow: 4px 0 12px rgba(0, 0, 0, 0.3); /* Softer shadow */
     transition: left 0.35s ease-in-out;
     z-index: 1000;
@@ -173,7 +175,6 @@ body, html {
     border-radius: 4px;
 }
 
-
 .control-group.pattern-management {
     display: grid;
     grid-template-columns: 1fr 1.5fr 1fr 1fr; /* Adjust column widths */
@@ -182,6 +183,26 @@ body, html {
 }
 .control-group.pattern-management select {
     width: 100%;
+}
+
+.control-group.pattern-io {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.control-group.pattern-io button {
+    width: 100%;
+}
+.control-group.pattern-io input[type="file"] {
+    font-size: 0.85em;
+    padding: 8px;
+}
+.file-upload-label {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    font-weight: 300;
+    margin-bottom: 6px !important; /* Override general label margin */
+    display: block;
 }
 
 
@@ -235,6 +256,31 @@ hr {
 .layer-item .control-group {
     margin-bottom: 12px;
 }
+
+.layer-elements-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.layer-elements-header label {
+    margin-bottom: 0; /* Remove margin as it's handled by parent */
+    font-weight: 400; /* Make it a bit bolder than other labels */
+    color: var(--text-primary);
+}
+.layer-element-quick-actions {
+    display: flex;
+    gap: 6px;
+}
+.layer-element-quick-actions button {
+    padding: 4px 8px;
+    font-size: 0.75em;
+    background-color: var(--button-tertiary-bg);
+}
+.layer-element-quick-actions button:hover {
+    background-color: var(--button-tertiary-hover);
+}
+
 
 .layer-elements {
     display: flex;
@@ -335,6 +381,7 @@ button.solo-layer-btn.active:hover {
 .tabs-content-container {
     flex-grow: 1;
     overflow-y: auto;
+    padding: 10px;
 }
 
 .tab-content {
@@ -358,7 +405,7 @@ button.solo-layer-btn.active:hover {
 /* Scrollbar styling for a more modern look (Webkit) */
 .controls-panel::-webkit-scrollbar,
 .tabs-content-container::-webkit-scrollbar {
-    width: 8px;
+    width: 4px;
 }
 .controls-panel::-webkit-scrollbar-track,
 .tabs-content-container::-webkit-scrollbar-track {

@@ -10,6 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const loadPatternSelect = document.getElementById('loadPatternSelect');
     const loadPatternBtn = document.getElementById('loadPattern');
     const deletePatternBtn = document.getElementById('deletePattern');
+    const downloadPatternBtn = document.getElementById('downloadPatternBtn');
+    const uploadPatternInput = document.getElementById('uploadPatternInput');
     const mainRegisterInput = document.getElementById('mainRegister');
     const beatsPerCycleInput = document.getElementById('beatsPerCycle');
     const muteAllBtn = document.getElementById('muteAllBtn');
@@ -287,7 +289,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const attackEndTime = attackStartTime + (pe.attackTime || 0);
                     const decayEndTime = attackEndTime + (pe.decayTime || 0);
                     
-                    // Start from a specific frequency if defined, else initialFreq
                     freqParam.setValueAtTime(pe.startFrequency !== undefined ? pe.startFrequency : initialFreq, attackStartTime);
                     if (pe.attackTime > 0) {
                          freqParam.linearRampToValueAtTime(initialFreq, attackEndTime);
@@ -299,7 +300,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             decayEndTime
                         );
                     }
-                    // Sustain/Release for pitch could be added if needed
                 }
             } else if (comp.type === 'noise' && whiteNoiseBuffer) {
                 sourceNode = audioCtx.createBufferSource();
@@ -335,10 +335,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             decayEndTime
                         );
                     }
-                    // Sustain/Release for filter could be added
                 }
                 filterNode.connect(compGainNode); 
-                previousNodeForSource = filterNode; // Source will connect to filter then to gain
+                previousNodeForSource = filterNode; 
             }
 
             // 3. Apply Gain Envelope
@@ -346,34 +345,28 @@ document.addEventListener('DOMContentLoaded', () => {
             const gainParam = compGainNode.gain;
             const peakGain = ge.peakGain || 0.5;
             const attackStartTime = now + (ge.attackDelay || 0);
-            const attackEndTime = attackStartTime + (ge.attackTime || 0.001); // Min attack time
-            const decayEndTime = attackEndTime + (ge.decayTime || 0.01); // Min decay time
+            const attackEndTime = attackStartTime + (ge.attackTime || 0.001); 
+            const decayEndTime = attackEndTime + (ge.decayTime || 0.01); 
             const sustainLevel = Math.max(0.0001, (ge.sustainLevel || 0) * peakGain);
             
-            gainParam.setValueAtTime(0, now); // Start silent
+            gainParam.setValueAtTime(0, now); 
             gainParam.linearRampToValueAtTime(peakGain, attackEndTime);
             gainParam.exponentialRampToValueAtTime(sustainLevel, decayEndTime);
 
-            // Schedule release
-            const releaseStartTime = decayEndTime + (ge.sustainDuration || 0); // sustainDuration is optional
-            const releaseEndTime = releaseStartTime + (ge.releaseTime || 0.01); // Min release
-            gainParam.setValueAtTime(sustainLevel, releaseStartTime); // Hold sustain
+            const releaseStartTime = decayEndTime + (ge.sustainDuration || 0); 
+            const releaseEndTime = releaseStartTime + (ge.releaseTime || 0.01); 
+            gainParam.setValueAtTime(sustainLevel, releaseStartTime); 
             gainParam.exponentialRampToValueAtTime(0.0001, releaseEndTime);
             
-            // 4. Connect nodes: source -> (filter) -> compGainNode -> masterGainNode
             sourceNode.connect(previousNodeForSource);
             compGainNode.connect(masterGainNode);
 
-            // 5. Start source and schedule stop
-            sourceNode.start(attackStartTime); // Can use attackStartTime if attackDelay is used
-            const stopTime = releaseEndTime + 0.05; // Stop shortly after envelope finishes
+            sourceNode.start(attackStartTime); 
+            const stopTime = releaseEndTime + 0.05; 
             
             try {
                 sourceNode.stop(stopTime);
             } catch (e) {
-                // Safari might throw if stop time is in the past due to very short sounds/timing issues
-                // console.warn("Error scheduling stop, possibly already past:", e.message);
-                // try to stop immediately if it failed
                 try { sourceNode.stop(now + 0.01); } catch (e2) {}
             }
         });
@@ -389,8 +382,8 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFrameTime: performance.now(),
         dotPopStates: {},
         isGlobalMute: false,
-        dotBaseSizeFactor: 0.015, // Default size updated to 0.015
-        dotPopMagnitude: 1.4      // Slightly less aggressive pop
+        dotBaseSizeFactor: 0.02, // Updated default based on HTML
+        dotPopMagnitude: 1.5      // Updated default based on HTML
     };
 
     const MAX_POP_DURATION = 0.15;
@@ -531,7 +524,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label for="layerColor-${index}">Color:</label>
                     <input type="color" id="layerColor-${index}" value="${layer.color}" data-index="${index}">
                 </div>
-                <label>Active Elements:</label>
+                <div class="layer-elements-header">
+                    <label>Active Elements:</label>
+                    <div class="layer-element-quick-actions">
+                        <button class="fill-layer-btn" data-index="${index}">Fill</button>
+                        <button class="clear-layer-btn" data-index="${index}">Clear</button>
+                    </div>
+                </div>
                 <div class="layer-elements" id="layerElements-${index}">
                     ${renderLayerElementButtons(layer, index)}
                 </div>
@@ -546,6 +545,10 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(`layerSubdivisions-${index}`).addEventListener('change', handleLayerSubdivisionsChange);
             document.getElementById(`layerSound-${index}`).addEventListener('change', handleLayerSoundChange);
             document.getElementById(`layerColor-${index}`).addEventListener('change', handleLayerColorChange);
+            
+            layerItem.querySelector('.fill-layer-btn').addEventListener('click', handleFillLayerElements);
+            layerItem.querySelector('.clear-layer-btn').addEventListener('click', handleClearLayerElements);
+            
             layerItem.querySelector('.remove-layer-btn').addEventListener('click', handleRemoveLayer);
             layerItem.querySelector('.mute-layer-btn').addEventListener('click', handleMuteLayer);
             layerItem.querySelector('.solo-layer-btn').addEventListener('click', handleSoloLayer);
@@ -648,6 +651,22 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
 
+    function handleFillLayerElements(event) {
+        const index = parseInt(event.target.dataset.index);
+        const layer = appState.layers[index];
+        layer.activeElements = layer.activeElements.map(() => true);
+        updateLayerElementButtons(index);
+        draw();
+    }
+
+    function handleClearLayerElements(event) {
+        const index = parseInt(event.target.dataset.index);
+        const layer = appState.layers[index];
+        layer.activeElements = layer.activeElements.map(() => false);
+        updateLayerElementButtons(index);
+        draw();
+    }
+
     function handleMuteLayer(event) {
         const index = parseInt(event.target.dataset.index);
         const layer = appState.layers[index];
@@ -681,15 +700,9 @@ document.addEventListener('DOMContentLoaded', () => {
         muteAllBtn.textContent = appState.isGlobalMute ? "Unmute All Sounds" : "Mute All Sounds";
     }
 
-    function saveCurrentPattern() {
-        const name = patternNameInput.value.trim();
-        if (!name) {
-            alert("Please enter a pattern name.");
-            return;
-        }
-        appState.patternName = name;
-        const patterns = JSON.parse(localStorage.getItem('rhythmPatterns') || '{}');
-        patterns[name] = {
+    function getPatternDataForSave() {
+        return {
+            patternName: appState.patternName, // Use current appState.patternName
             bpm: appState.bpm,
             beatsPerCycle: appState.beatsPerCycle,
             layers: appState.layers.map(l => ({
@@ -703,14 +716,27 @@ document.addEventListener('DOMContentLoaded', () => {
             dotBaseSizeFactor: appState.dotBaseSizeFactor,
             dotPopMagnitude: appState.dotPopMagnitude
         };
+    }
+
+    function saveCurrentPattern() {
+        const name = patternNameInput.value.trim();
+        if (!name) {
+            alert("Please enter a pattern name.");
+            return;
+        }
+        appState.patternName = name; // Update appState patternName
+        const patternData = getPatternDataForSave();
+        
+        const patterns = JSON.parse(localStorage.getItem('rhythmPatterns') || '{}');
+        patterns[name] = patternData; // Store the whole object
         localStorage.setItem('rhythmPatterns', JSON.stringify(patterns));
         loadPatternList();
-        alert(`Pattern "${name}" saved!`);
+        alert(`Pattern "${name}" saved locally!`);
     }
 
     function loadPatternList() {
         const patterns = JSON.parse(localStorage.getItem('rhythmPatterns') || '{}');
-        loadPatternSelect.innerHTML = '<option value="">-- Select Pattern --</option>';
+        loadPatternSelect.innerHTML = '<option value="">-- Select Local Pattern --</option>';
         Object.keys(patterns).forEach(name => {
             const option = document.createElement('option');
             option.value = name;
@@ -719,59 +745,108 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function applyPatternData(patternData, sourceName = "Pattern") {
+        appState.bpm = patternData.bpm || 100;
+        appState.beatsPerCycle = patternData.beatsPerCycle || 8;
+        appState.layers = patternData.layers ? patternData.layers.map((l, index) => ({
+            ...l,
+            id: l.id || Date.now() + index,
+            subdivisions: l.subdivisions || 4,
+            soundProfileIndex: (typeof l.soundProfileIndex !== 'undefined' && l.soundProfileIndex < soundProfiles.length) 
+                                ? l.soundProfileIndex 
+                                : index % soundProfiles.length,
+            isMuted: l.isMuted || false,
+            isSoloed: l.isSoloed || false,
+            color: l.color || getNextDefaultColor()
+        })) : [];
+        appState.patternName = patternData.patternName || 'LoadedPattern';
+
+        appState.dotBaseSizeFactor = patternData.dotBaseSizeFactor || 0.02;
+        appState.dotPopMagnitude = patternData.dotPopMagnitude || 1.5;
+
+        patternNameInput.value = appState.patternName;
+        mainRegisterInput.value = appState.bpm;
+        beatsPerCycleInput.value = appState.beatsPerCycle;
+        
+        dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
+        dotPopMagnitudeInput.value = appState.dotPopMagnitude;
+
+        renderLayersControls();
+        draw();
+        alert(`${sourceName} "${appState.patternName}" loaded!`);
+    }
+
+
     function loadSelectedPattern() {
         const name = loadPatternSelect.value;
         if (!name) return;
         const patterns = JSON.parse(localStorage.getItem('rhythmPatterns') || '{}');
         if (patterns[name]) {
-            const patternData = patterns[name];
-            
-            appState.bpm = patternData.bpm || 100;
-            appState.beatsPerCycle = patternData.beatsPerCycle || 8;
-            // Ensure soundProfileIndex is valid if loading older patterns or if list changes
-            appState.layers = patternData.layers ? patternData.layers.map((l, index) => ({
-                ...l,
-                id: l.id || Date.now() + index,
-                subdivisions: l.subdivisions || 4,
-                soundProfileIndex: (typeof l.soundProfileIndex !== 'undefined' && l.soundProfileIndex < soundProfiles.length) 
-                                    ? l.soundProfileIndex 
-                                    : index % soundProfiles.length,
-                isMuted: l.isMuted || false,
-                isSoloed: l.isSoloed || false,
-                color: l.color || getNextDefaultColor()
-            })) : [];
-            appState.patternName = name;
-
-            appState.dotBaseSizeFactor = patternData.dotBaseSizeFactor || 0.007;
-            appState.dotPopMagnitude = patternData.dotPopMagnitude || 1.4;
-
-            patternNameInput.value = appState.patternName;
-            mainRegisterInput.value = appState.bpm;
-            beatsPerCycleInput.value = appState.beatsPerCycle;
-            
-            dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
-            dotPopMagnitudeInput.value = appState.dotPopMagnitude;
-
-            renderLayersControls();
-            draw();
-            alert(`Pattern "${name}" loaded!`);
+            applyPatternData(patterns[name], "Local pattern");
         }
     }
 
     function deleteSelectedPattern() {
         const name = loadPatternSelect.value;
         if (!name) {
-            alert("Select a pattern to delete.");
+            alert("Select a local pattern to delete.");
             return;
         }
-        if (confirm(`Are you sure you want to delete pattern "${name}"?`)) {
+        if (confirm(`Are you sure you want to delete local pattern "${name}"?`)) {
             const patterns = JSON.parse(localStorage.getItem('rhythmPatterns') || '{}');
             delete patterns[name];
             localStorage.setItem('rhythmPatterns', JSON.stringify(patterns));
             loadPatternList();
-            alert(`Pattern "${name}" deleted.`);
+            alert(`Local pattern "${name}" deleted.`);
         }
     }
+
+    function downloadCurrentPatternFile() {
+        const name = patternNameInput.value.trim() || "MyZenRhythm";
+        appState.patternName = name; // Ensure appState has the latest name
+        const patternData = getPatternDataForSave();
+        const jsonData = JSON.stringify(patternData, null, 2);
+        const blob = new Blob([jsonData], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${patternData.patternName.replace(/[^a-z0-9]/gi, '_')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        alert(`Pattern "${patternData.patternName}" prepared for download.`);
+    }
+
+    function handleUploadPatternFile(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const patternData = JSON.parse(e.target.result);
+                // Basic validation (can be more thorough)
+                if (patternData && patternData.layers && typeof patternData.bpm !== 'undefined') {
+                    applyPatternData(patternData, "Uploaded pattern");
+                } else {
+                    alert("Invalid pattern file format.");
+                }
+            } catch (error) {
+                console.error("Error parsing pattern file:", error);
+                alert("Could not load pattern from file. Ensure it is a valid JSON exported from Zen Rhythm Circle.");
+            } finally {
+                // Reset file input to allow uploading the same file again if needed
+                uploadPatternInput.value = "";
+            }
+        };
+        reader.onerror = () => {
+            alert("Error reading file.");
+            uploadPatternInput.value = "";
+        };
+        reader.readAsText(file);
+    }
+
 
     function toggleFullscreen() {
         if (!document.fullscreenElement) {
@@ -807,11 +882,15 @@ document.addEventListener('DOMContentLoaded', () => {
     muteAllBtn.addEventListener('click', handleMuteAll);
     
     patternNameInput.addEventListener('change', (e) => {
-        appState.patternName = e.target.value; 
+        // Only update appState.patternName if user explicitly saves or downloads
+        // appState.patternName = e.target.value; 
     });
     savePatternBtn.addEventListener('click', saveCurrentPattern);
     loadPatternBtn.addEventListener('click', loadSelectedPattern);
     deletePatternBtn.addEventListener('click', deleteSelectedPattern);
+    downloadPatternBtn.addEventListener('click', downloadCurrentPatternFile);
+    uploadPatternInput.addEventListener('change', handleUploadPatternFile);
+
 
     mainRegisterInput.addEventListener('change', (e) => {
         const val = parseInt(e.target.value);
@@ -831,12 +910,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     dotBaseSizeFactorInput.addEventListener('change', (e) => {
         const val = parseFloat(e.target.value);
-        if (val >= 0.001 && val <= 0.05) {
+        if (val >= 0.001 && val <= 0.1) {
             appState.dotBaseSizeFactor = val;
-            // Save pattern if name is set
-            if (patternNameInput.value.trim()) {
-                saveCurrentPattern();
-            }
+            // Consider if visual settings should trigger an auto-save or if it's part of manual save.
+            // For now, visual settings are saved with manual savePattern or when downloading.
             draw();
         } else {
             e.target.value = appState.dotBaseSizeFactor;
@@ -846,9 +923,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const val = parseFloat(e.target.value);
         if (val >= 1.0 && val <= 5.0) {
             appState.dotPopMagnitude = val;
-            if (patternNameInput.value.trim()) {
-                saveCurrentPattern();
-            }
             draw();
         } else {
             e.target.value = appState.dotPopMagnitude;
@@ -862,32 +936,29 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', resizeCanvas);
 
     function init() {
-        loadPatternList();
+        loadPatternList(); // Load saved local patterns first
+        
+        // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
+        // Or try to load the last used pattern name if available (more complex, not implemented here)
         if (appState.layers.length === 0) {
-             handleAddLayer();
+             handleAddLayer(); // Add one layer
              if(appState.layers.length > 0){
                 appState.layers[0].subdivisions = 8;
                 appState.layers[0].activeElements = [true,false,true,false,true,false,true,false];
-                // Ensure the first layer uses a good default sound, e.g., 'Kick Deep' (index 0)
                 appState.layers[0].soundProfileIndex = 0; 
              }
         }
         
+        // Set initial values from appState (which might have been populated by a loaded pattern or defaults)
         patternNameInput.value = appState.patternName;
         mainRegisterInput.value = appState.bpm;
         beatsPerCycleInput.value = appState.beatsPerCycle;
-        
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
         
         renderLayersControls();
         resizeCanvas();
         requestAnimationFrame(update);
-
-        // Attempt to initialize audio on load if user interaction is not strictly required by browser yet
-        // This might not work in all browsers without a prior user gesture on the page.
-        // initAudioByUserGesture(); 
-        // Better to rely on first click (menu, add layer, etc.)
     }
 
     init();
