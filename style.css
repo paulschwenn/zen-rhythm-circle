@@ -498,9 +498,12 @@ a:active {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
     z-index: 2000;
+    display: flex; /* Changed from justify-content/align-items to flex for direct control */
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(3px);
+    padding: 20px; /* Added padding for space around the content */
+    box-sizing: border-box; /* Ensure padding is included in width/height */
 }
 
 .shortcuts-modal-content {
@@ -508,11 +511,13 @@ a:active {
     padding: 25px 30px;
     border-radius: 8px;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
-    width: auto;
-    min-width: 350px;
+    width: 90vw; /* Responsive width */
+    min-width: 300px; /* Adjusted min-width */
     max-width: 500px;
     color: var(--text-primary);
     position: relative; /* For close button positioning */
+    max-height: 90vh; /* Maximum height */
+    overflow-y: auto; /* Enable vertical scrolling */
 }
 
 .shortcuts-modal-close {
