@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function playHitSound(layerIndex) {
+    function playHitSound(layerIndex, elementIndex) {
         if (!audioCtx || !audioInitialized || audioCtx.state !== 'running' || !masterGainNode) return;
         if (appState.isGlobalMute) return;
 
@@ -269,6 +269,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!profile || !profile.components) return;
 
         const now = audioCtx.currentTime;
+
+        // --- POP ANIMATION TRIGGER MOVED HERE ---
+        if (typeof elementIndex === 'number') {
+            const popKey = `${layerIndex}-${elementIndex}`;
+            appState.dotPopStates[popKey] = MAX_POP_DURATION;
+            appState.buttonPopStates[popKey] = MAX_BUTTON_POP_DURATION;
+            // Add popping class to button
+            const button = document.querySelector(`.layer-elements button[data-layer-index="${layerIndex}"][data-el-index="${elementIndex}"]`);
+            if (button) {
+                button.classList.add('popping');
+            }
+        }
+        // --- END POP ANIMATION TRIGGER ---
 
         profile.components.forEach(comp => {
             let sourceNode;
@@ -480,20 +493,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const cycleDuration = (60 / appState.bpm) * appState.beatsPerCycle;
         appState.currentBeatTime = (appState.currentBeatTime + deltaTime) % cycleDuration;
 
+        // Only decrement pop states, do not trigger them here
         for (const key in appState.dotPopStates) {
             if (appState.dotPopStates[key] > 0) {
                 appState.dotPopStates[key] -= deltaTime;
                 if (appState.dotPopStates[key] <= 0) delete appState.dotPopStates[key];
             }
         }
-
-        // Manage button pop states
         for (const key in appState.buttonPopStates) {
             if (appState.buttonPopStates[key] > 0) {
                 appState.buttonPopStates[key] -= deltaTime;
                 if (appState.buttonPopStates[key] <= 0) {
                     delete appState.buttonPopStates[key];
-                    // Remove popping class from button
                     const [layerIdx, elIdx] = key.split('-').map(Number);
                     const button = document.querySelector(`.layer-elements button[data-layer-index="${layerIdx}"][data-el-index="${elIdx}"]`);
                     if (button) {
@@ -502,7 +513,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        
+
+        // --- REMOVE ANIMATION TRIGGER FROM HERE ---
+        // Instead, only check for sound triggers and call playHitSound (which now also triggers animation)
         appState.layers.forEach((layer, layerIdx) => {
             if (layer.subdivisions === 0) return;
             for (let i = 0; i < layer.subdivisions; i++) {
@@ -516,19 +529,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (elementHitTime >= prevHandTime || elementHitTime < appState.currentBeatTime) hit = true;
                     }
                     if (hit) {
-                         appState.dotPopStates[`${layerIdx}-${i}`] = MAX_POP_DURATION;
-                         appState.buttonPopStates[`${layerIdx}-${i}`] = MAX_BUTTON_POP_DURATION;
-                         
-                         // Add popping class to button
-                         const button = document.querySelector(`.layer-elements button[data-layer-index="${layerIdx}"][data-el-index="${i}"]`);
-                         if (button) {
-                             button.classList.add('popping');
-                         }
-                         playHitSound(layerIdx);
+                         // Only call playHitSound, which now also triggers animation
+                         playHitSound(layerIdx, i);
                     }
                 }
             }
         });
+        // --- END REMOVAL ---
+
         draw();
         requestAnimationFrame(update);
     }
