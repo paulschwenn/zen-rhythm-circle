@@ -406,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dotPopMagnitude: 1.5,
         baseRadiusFactor: 0.2, // Added
         maxRadiusFactor: 0.42, // Added
-        showGhostElements: false, // Added for ghost elements
+        showGhostElements: true, // Added for ghost elements
         ghostNoteScaleFactor: 0.4, // Added for ghost note size scaling
         // Dragging state for layer elements
         isDraggingElements: false,
@@ -878,6 +878,54 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
+    function handleCanvasClick(event) {
+        if (!canvas) return;
+        initAudioByUserGesture(); // Ensure audio is ready for any subsequent actions
+
+        const rect = canvas.getBoundingClientRect();
+        const clickX = event.clientX - rect.left;
+        const clickY = event.clientY - rect.top;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const baseRadius = canvas.width * appState.baseRadiusFactor;
+        const maxRadius = canvas.width * appState.maxRadiusFactor; // Used for boundary check
+        const radiusStep = appState.layers.length > 1 ? (maxRadius - baseRadius) / (appState.layers.length - 1) : 0;
+        
+        // Use the same base size as active dots for click detection radius
+        // This makes it easier to click both active and inactive (ghost/hidden) spots
+        const dotClickableRadius = Math.max(2, canvas.width * appState.dotBaseSizeFactor);
+
+        for (let layerIdx = 0; layerIdx < appState.layers.length; layerIdx++) {
+            const layer = appState.layers[layerIdx];
+            const layerRadius = baseRadius + layerIdx * radiusStep;
+
+            if (layerRadius > maxRadius + dotClickableRadius) continue; // Optimization: skip layers too far out
+
+            for (let i = 0; i < layer.subdivisions; i++) {
+                const angle = (i / layer.subdivisions) * Math.PI * 2 - Math.PI / 2;
+                const dotX = centerX + layerRadius * Math.cos(angle);
+                const dotY = centerY + layerRadius * Math.sin(angle);
+
+                const distance = Math.sqrt((clickX - dotX) ** 2 + (clickY - dotY) ** 2);
+
+                if (distance <= dotClickableRadius) {
+                    // Toggle the element's state
+                    layer.activeElements[i] = !layer.activeElements[i];
+                    
+                    // Update the UI controls for this layer
+                    updateLayerElementButtons(layerIdx);
+                    
+                    // Redraw the canvas
+                    draw();
+                    
+                    return; // Click handled, no need to check other elements
+                }
+            }
+        }
+    }
+
+
     function handleFillLayerElements(event) {
         const index = parseInt(event.target.dataset.index);
         const layer = appState.layers[index];
@@ -1246,6 +1294,11 @@ document.addEventListener('DOMContentLoaded', () => {
         document.addEventListener('mouseup', handleDragEnd);
         document.addEventListener('touchend', handleDragEnd);
         document.addEventListener('touchcancel', handleDragEnd);
+
+        // Add click listener to the canvas for interactive elements
+        if (canvas) {
+            canvas.addEventListener('click', handleCanvasClick);
+        }
 
             // Add global keydown listener for space bar play/stop
             document.addEventListener('keydown', (event) => {
