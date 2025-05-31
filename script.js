@@ -418,11 +418,16 @@ document.addEventListener('DOMContentLoaded', () => {
         isDraggingElements: false,
         dragLayerIndex: null,
         dragTargetState: false,
-        lastInteractedLayerIndex: null // Added for keyboard shortcuts
+        lastInteractedLayerIndex: null, // Added for keyboard shortcuts
+        dragTouchIdentifier: null, // Added for touch drag
+        lastCanvasTapTime: 0, // Added for double-tap detection
+        lastCanvasTapPosition: null // Added for double-tap detection
     };
 
     const MAX_POP_DURATION = 0.15;
     const MAX_BUTTON_POP_DURATION = 0.15; // Duration for button pop effect
+    const DOUBLE_TAP_TIME_THRESHOLD = 300; // Milliseconds for double tap
+    const DOUBLE_TAP_DISTANCE_THRESHOLD = 30; // Pixels for double tap proximity
 
     // Helper function to get contrasting text color (black or white)
     function getContrastingTextColor(hexColor) {
@@ -774,18 +779,25 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleAddLayer() {
         const newLayer = {
             id: Date.now(),
-            subdivisions: 4,
-            activeElements: [true, false, true, false],
+            subdivisions: 4, // Default if no layers exist yet (init() might override for the very first layer)
+            activeElements: [],
             color: getNextDefaultColor(),
             soundProfileIndex: appState.layers.length % soundProfiles.length,
             isMuted: false,
             isSoloed: false
         };
-        while (newLayer.activeElements.length < newLayer.subdivisions) newLayer.activeElements.push(false);
-        newLayer.activeElements.length = newLayer.subdivisions; 
+
+        if (appState.layers.length > 0) {
+            const lastLayer = appState.layers[appState.layers.length - 1];
+            newLayer.subdivisions = lastLayer.subdivisions;
+        }
+        // Initialize activeElements based on subdivisions, all false
+        newLayer.activeElements = Array(newLayer.subdivisions).fill(false);
+        
         appState.layers.push(newLayer);
         appState.lastInteractedLayerIndex = appState.layers.length - 1; // Update last interacted
         renderLayersControls();
+        draw(); // Ensure canvas updates immediately
     }
 
     function handleRemoveLayer(eventOrIndex) {
@@ -1033,9 +1045,31 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateLayerElementButtons(layerIndex);
             draw();
+            // Reset tap trackers if interacting with an element to avoid misinterpreting as double tap
+            appState.lastCanvasTapTime = 0;
+            appState.lastCanvasTapPosition = null;
         } else {
-            // If no interactive element was touched (empty area), toggle play/stop
-            handlePlayStop();
+            // Tap on empty area: check for double tap (add layer) or single tap (play/stop)
+            const now = performance.now();
+
+            if (appState.lastCanvasTapTime &&
+                (now - appState.lastCanvasTapTime < DOUBLE_TAP_TIME_THRESHOLD) &&
+                appState.lastCanvasTapPosition &&
+                (Math.sqrt(
+                    (touchX - appState.lastCanvasTapPosition.x) ** 2 +
+                    (touchY - appState.lastCanvasTapPosition.y) ** 2
+                ) < DOUBLE_TAP_DISTANCE_THRESHOLD)
+            ) {
+                // Double tap detected on empty area
+                handleAddLayer();
+                appState.lastCanvasTapTime = 0; // Reset after double tap
+                appState.lastCanvasTapPosition = null;
+            } else {
+                // Single tap on empty area (or first tap of a potential double-tap)
+                handlePlayStop();
+                appState.lastCanvasTapTime = now;
+                appState.lastCanvasTapPosition = { x: touchX, y: touchY };
+            }
         }
     }
 
@@ -1584,10 +1618,19 @@ document.addEventListener('DOMContentLoaded', () => {
             // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
             // Or try to load the last used pattern name if available (more complex, not implemented here)
             if (appState.layers.length === 0) {
-                 handleAddLayer(); // Add one layer
-             if(appState.layers.length > 0){ // This check is now redundant due to handleAddLayer setting it
+                 handleAddLayer(); // Add one layer. handleAddLayer now sets subdivisions to 4 and activeElements to all false by default.
+                                 // The code below will then customize this *first* layer as per original logic.
+             if(appState.layers.length > 0){ 
                 appState.layers[0].subdivisions = 8;
-                appState.layers[0].activeElements = [true,false,true,false,true,false,true,false];
+                // Explicitly set activeElements for the first default layer
+                appState.layers[0].activeElements = [true,false,true,false,true,false,true,false]; 
+                // Ensure activeElements array length matches subdivisions if it was different
+                // This might be redundant if activeElements is always set as above, but good for safety:
+                while(appState.layers[0].activeElements.length < appState.layers[0].subdivisions) {
+                    appState.layers[0].activeElements.push(false);
+                }
+                appState.layers[0].activeElements.length = appState.layers[0].subdivisions;
+
                 appState.layers[0].soundProfileIndex = 0; 
                 // appState.lastInteractedLayerIndex = 0; // Already set by handleAddLayer
              }
