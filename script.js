@@ -440,7 +440,7 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const baseRadius = canvas.width * 0.1;
+        const baseRadius = canvas.width * 0.2;
         const maxRadius = canvas.width * 0.42;
         const radiusStep = appState.layers.length > 1 ? (maxRadius - baseRadius) / (appState.layers.length -1) : 0;
         const handLength = maxRadius * 1.05;
