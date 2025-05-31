@@ -389,8 +389,8 @@ document.addEventListener('DOMContentLoaded', () => {
         lastFrameTime: performance.now(),
         dotPopStates: {},
         isGlobalMute: false,
-        dotBaseSizeFactor: 0.007,
-        dotPopMagnitude: 1.4
+        dotBaseSizeFactor: 0.015, // Default size updated to 0.015
+        dotPopMagnitude: 1.4      // Slightly less aggressive pop
     };
 
     const MAX_POP_DURATION = 0.15;
@@ -828,17 +828,31 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     });
 
+
     dotBaseSizeFactorInput.addEventListener('change', (e) => {
         const val = parseFloat(e.target.value);
-         if (val >= 0.001 && val <= 0.05) appState.dotBaseSizeFactor = val;
-         else e.target.value = appState.dotBaseSizeFactor;
-        draw();
+        if (val >= 0.001 && val <= 0.05) {
+            appState.dotBaseSizeFactor = val;
+            // Save pattern if name is set
+            if (patternNameInput.value.trim()) {
+                saveCurrentPattern();
+            }
+            draw();
+        } else {
+            e.target.value = appState.dotBaseSizeFactor;
+        }
     });
     dotPopMagnitudeInput.addEventListener('change', (e) => {
         const val = parseFloat(e.target.value);
-        if (val >= 1.0 && val <= 5.0) appState.dotPopMagnitude = val;
-        else e.target.value = appState.dotPopMagnitude;
-        draw();
+        if (val >= 1.0 && val <= 5.0) {
+            appState.dotPopMagnitude = val;
+            if (patternNameInput.value.trim()) {
+                saveCurrentPattern();
+            }
+            draw();
+        } else {
+            e.target.value = appState.dotPopMagnitude;
+        }
     });
 
     fullscreenBtn.addEventListener('click', () => {

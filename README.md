@@ -31,7 +31,7 @@ Ever get lost in a jam trying to lock in a tricky polyrhythm? This tool helps yo
 
 **Online:**
 <!-- 1. Visit [YOUR_DEPLOYMENT_LINK_HERE] -->
-1.  (Deployment link coming soon!)
+1.  Use it free online here [Zen Rhythm Circle](https://paulschwenn.github.io/zen-rhythm-circle/)
 
 **Offline / Locally:**
 1.  Download the project files (`index.html`, `style.css`, `script.js`).
