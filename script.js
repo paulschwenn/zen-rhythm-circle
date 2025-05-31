@@ -581,15 +581,54 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
     
-    const defaultLayerColors = [
-        "#76ABAE", "#A2D2D2", "#BBE2E2", "#D4F0F0",
-        "#adc178", "#dde5b6", "#f0ead2"
-    ];
-    let lastColorIndex = -1;
+    // const defaultLayerColors = [
+    //     "#76ABAE", "#A2D2D2", "#BBE2E2", "#D4F0F0",
+    //     "#adc178", "#dde5b6", "#f0ead2"
+    // ];
+    // let lastColorIndex = -1;
 
     function getNextDefaultColor() {
-        lastColorIndex = (lastColorIndex + 1) % defaultLayerColors.length;
-        return defaultLayerColors[lastColorIndex];
+        const h = Math.random() * 360; // Hue from 0 to 360
+        // Saturation: Lower values are more desaturated (closer to gray).
+        // For pastels, we want relatively low to medium saturation.
+        const s = 30 + Math.random() * 55; // Saturation from 25% to 60%
+        // Lightness: Higher values are lighter. Pastels are light.
+        const l = 65 + Math.random() * 20; // Lightness from 75% to 95%
+
+        // Convert HSL to RGB
+        const sNorm = s / 100;
+        const lNorm = l / 100;
+        
+        // Formula from https://www.w3.org/TR/css-color-3/#hsl-color
+        // and other standard HSL to RGB conversions
+        let r, g, b;
+        if (sNorm === 0) {
+            r = g = b = lNorm; // achromatic
+        } else {
+            const hueToRgb = (p, q, t) => {
+                if (t < 0) t += 1;
+                if (t > 1) t -= 1;
+                if (t < 1 / 6) return p + (q - p) * 6 * t;
+                if (t < 1 / 2) return q;
+                if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+                return p;
+            };
+
+            const q = lNorm < 0.5 ? lNorm * (1 + sNorm) : lNorm + sNorm - lNorm * sNorm;
+            const p = 2 * lNorm - q;
+            const hNorm = h / 360;
+
+            r = hueToRgb(p, q, hNorm + 1 / 3);
+            g = hueToRgb(p, q, hNorm);
+            b = hueToRgb(p, q, hNorm - 1 / 3);
+        }
+
+        const toHex = (c) => {
+            const hex = Math.round(c * 255).toString(16);
+            return hex.length === 1 ? "0" + hex : hex;
+        };
+
+        return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
     }
 
     function handleAddLayer() {
