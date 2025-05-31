@@ -988,12 +988,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (targetElement) {
             const { layerIndex, elementIndex, layer } = targetElement;
-            if (layerIndex === appState.dragLayerIndex) {
-                if (layer.activeElements[elementIndex] !== appState.dragTargetState) {
-                    layer.activeElements[elementIndex] = appState.dragTargetState;
-                    updateLayerElementButtons(layerIndex);
-                    draw();
-                }
+            // Removed: if (layerIndex === appState.dragLayerIndex)
+            if (layer.activeElements[elementIndex] !== appState.dragTargetState) {
+                layer.activeElements[elementIndex] = appState.dragTargetState;
+                updateLayerElementButtons(layerIndex); // Update buttons for the affected layer
+                draw();
             }
         }
     }
@@ -1047,12 +1046,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (targetElement) {
             const { layerIndex, elementIndex, layer } = targetElement;
-            if (layerIndex === appState.dragLayerIndex) {
-                if (layer.activeElements[elementIndex] !== appState.dragTargetState) {
-                    layer.activeElements[elementIndex] = appState.dragTargetState;
-                    updateLayerElementButtons(layerIndex);
-                    draw();
-                }
+            // Removed: if (layerIndex === appState.dragLayerIndex)
+            if (layer.activeElements[elementIndex] !== appState.dragTargetState) {
+                layer.activeElements[elementIndex] = appState.dragTargetState;
+                updateLayerElementButtons(layerIndex); // Update buttons for the affected layer
+                draw();
             }
         }
     }
