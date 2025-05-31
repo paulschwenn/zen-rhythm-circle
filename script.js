@@ -441,6 +441,43 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
 
+    // --- NEW HELPER FUNCTION ---
+    function getElementFromCanvasCoordinates(canvasX, canvasY) {
+        if (!canvas) return null;
+
+        const centerX = canvas.width / 2;
+        const centerY = canvas.height / 2;
+        const baseRadius = canvas.width * appState.baseRadiusFactor;
+        const maxRadius = canvas.width * appState.maxRadiusFactor;
+        const radiusStep = appState.layers.length > 1 ? (maxRadius - baseRadius) / (appState.layers.length - 1) : 0;
+        const dotClickableRadius = Math.max(2, canvas.width * appState.dotBaseSizeFactor * 1.5); // Slightly larger click radius for usability
+
+        for (let layerIdx = 0; layerIdx < appState.layers.length; layerIdx++) {
+            const layer = appState.layers[layerIdx];
+            const layerRadius = baseRadius + layerIdx * radiusStep;
+
+            if (layerRadius > maxRadius + dotClickableRadius * 2) continue; 
+
+            for (let elIdx = 0; elIdx < layer.subdivisions; elIdx++) {
+                const angle = (elIdx / layer.subdivisions) * Math.PI * 2 - Math.PI / 2;
+                const dotX = centerX + layerRadius * Math.cos(angle);
+                const dotY = centerY + layerRadius * Math.sin(angle);
+
+                const distance = Math.sqrt((canvasX - dotX) ** 2 + (canvasY - dotY) ** 2);
+
+                if (distance <= dotClickableRadius) {
+                    return {
+                        layerIndex: layerIdx,
+                        elementIndex: elIdx,
+                        layer: layer // Return the layer object for convenience
+                    };
+                }
+            }
+        }
+        return null;
+    }
+    // --- END NEW HELPER FUNCTION ---
+
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const centerX = canvas.width / 2;
@@ -912,49 +949,109 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
 
-    function handleCanvasClick(event) {
+    // Renamed from handleCanvasClick and modified
+    function handleCanvasMouseDown(event) {
         if (!canvas) return;
-        initAudioByUserGesture(); // Ensure audio is ready for any subsequent actions
+        initAudioByUserGesture();
 
         const rect = canvas.getBoundingClientRect();
         const clickX = event.clientX - rect.left;
         const clickY = event.clientY - rect.top;
 
-        const centerX = canvas.width / 2;
-        const centerY = canvas.height / 2;
-        const baseRadius = canvas.width * appState.baseRadiusFactor;
-        const maxRadius = canvas.width * appState.maxRadiusFactor; // Used for boundary check
-        const radiusStep = appState.layers.length > 1 ? (maxRadius - baseRadius) / (appState.layers.length - 1) : 0;
-        
-        // Use the same base size as active dots for click detection radius
-        // This makes it easier to click both active and inactive (ghost/hidden) spots
-        const dotClickableRadius = Math.max(2, canvas.width * appState.dotBaseSizeFactor);
+        const targetElement = getElementFromCanvasCoordinates(clickX, clickY);
 
-        for (let layerIdx = 0; layerIdx < appState.layers.length; layerIdx++) {
-            const layer = appState.layers[layerIdx];
-            const layerRadius = baseRadius + layerIdx * radiusStep;
+        if (targetElement) {
+            const { layerIndex, elementIndex, layer } = targetElement;
 
-            if (layerRadius > maxRadius + dotClickableRadius) continue; // Optimization: skip layers too far out
+            // Toggle the element's state
+            layer.activeElements[elementIndex] = !layer.activeElements[elementIndex];
+            
+            // Start dragging state for canvas elements
+            appState.isDraggingElements = true;
+            appState.dragLayerIndex = layerIndex;
+            appState.dragTargetState = layer.activeElements[elementIndex];
+            appState.lastInteractedLayerIndex = layerIndex;
+            
+            updateLayerElementButtons(layerIndex);
+            draw();
+        }
+    }
 
-            for (let i = 0; i < layer.subdivisions; i++) {
-                const angle = (i / layer.subdivisions) * Math.PI * 2 - Math.PI / 2;
-                const dotX = centerX + layerRadius * Math.cos(angle);
-                const dotY = centerY + layerRadius * Math.sin(angle);
+    function handleCanvasMouseMove(event) {
+        if (!appState.isDraggingElements || !canvas) return;
 
-                const distance = Math.sqrt((clickX - dotX) ** 2 + (clickY - dotY) ** 2);
+        const rect = canvas.getBoundingClientRect();
+        const moveX = event.clientX - rect.left;
+        const moveY = event.clientY - rect.top;
 
-                if (distance <= dotClickableRadius) {
-                    // Toggle the element's state
-                    layer.activeElements[i] = !layer.activeElements[i];
-                    appState.lastInteractedLayerIndex = layerIdx; // Update last interacted
-                    
-                    // Update the UI controls for this layer
-                    updateLayerElementButtons(layerIdx);
-                    
-                    // Redraw the canvas
+        const targetElement = getElementFromCanvasCoordinates(moveX, moveY);
+
+        if (targetElement) {
+            const { layerIndex, elementIndex, layer } = targetElement;
+            if (layerIndex === appState.dragLayerIndex) {
+                if (layer.activeElements[elementIndex] !== appState.dragTargetState) {
+                    layer.activeElements[elementIndex] = appState.dragTargetState;
+                    updateLayerElementButtons(layerIndex);
                     draw();
-                    
-                    return; // Click handled, no need to check other elements
+                }
+            }
+        }
+    }
+
+    function handleCanvasTouchStart(event) {
+        if (!canvas) return;
+        event.preventDefault();
+        initAudioByUserGesture();
+
+        const touch = event.changedTouches[0];
+        const rect = canvas.getBoundingClientRect();
+        const touchX = touch.clientX - rect.left;
+        const touchY = touch.clientY - rect.top;
+
+        const targetElement = getElementFromCanvasCoordinates(touchX, touchY);
+
+        if (targetElement) {
+            const { layerIndex, elementIndex, layer } = targetElement;
+            
+            layer.activeElements[elementIndex] = !layer.activeElements[elementIndex];
+            
+            appState.isDraggingElements = true;
+            appState.dragLayerIndex = layerIndex;
+            appState.dragTargetState = layer.activeElements[elementIndex];
+            appState.lastInteractedLayerIndex = layerIndex;
+            appState.dragTouchIdentifier = touch.identifier;
+            
+            updateLayerElementButtons(layerIndex);
+            draw();
+        }
+    }
+
+    function handleCanvasTouchMove(event) {
+        if (!appState.isDraggingElements || !canvas) return;
+        event.preventDefault();
+
+        let activeTouch = null;
+        for (let i = 0; i < event.changedTouches.length; i++) {
+            if (event.changedTouches[i].identifier === appState.dragTouchIdentifier) {
+                activeTouch = event.changedTouches[i];
+                break;
+            }
+        }
+        if (!activeTouch) return; // Not the touch we are tracking for drag
+
+        const rect = canvas.getBoundingClientRect();
+        const touchX = activeTouch.clientX - rect.left;
+        const touchY = activeTouch.clientY - rect.top;
+
+        const targetElement = getElementFromCanvasCoordinates(touchX, touchY);
+
+        if (targetElement) {
+            const { layerIndex, elementIndex, layer } = targetElement;
+            if (layerIndex === appState.dragLayerIndex) {
+                if (layer.activeElements[elementIndex] !== appState.dragTargetState) {
+                    layer.activeElements[elementIndex] = appState.dragTargetState;
+                    updateLayerElementButtons(layerIndex);
+                    draw();
                 }
             }
         }
@@ -1329,14 +1426,17 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         loadPatternList(); // Load saved local patterns first
         
-        // Add global mouseup listener
+        // Add global mouseup/touchend listener
         document.addEventListener('mouseup', handleDragEnd);
         document.addEventListener('touchend', handleDragEnd);
         document.addEventListener('touchcancel', handleDragEnd);
 
-        // Add click listener to the canvas for interactive elements
+        // Add event listeners to the canvas for interactive elements
         if (canvas) {
-            canvas.addEventListener('click', handleCanvasClick);
+            canvas.addEventListener('mousedown', handleCanvasMouseDown);
+            canvas.addEventListener('mousemove', handleCanvasMouseMove);
+            canvas.addEventListener('touchstart', handleCanvasTouchStart, { passive: false });
+            canvas.addEventListener('touchmove', handleCanvasTouchMove, { passive: false });
         }
 
             // Add global keydown listener for space bar play/stop
