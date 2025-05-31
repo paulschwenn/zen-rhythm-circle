@@ -655,6 +655,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <label>Active Elements:</label>
                     <div class="layer-element-quick-actions">
                         <button class="fill-layer-btn" data-index="${index}">Fill</button>
+                        <button class="random-layer-btn" data-index="${index}">Random</button>
                         <button class="clear-layer-btn" data-index="${index}">Clear</button>
                     </div>
                 </div>
@@ -674,6 +675,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById(`layerColor-${index}`).addEventListener('change', handleLayerColorChange);
             
             layerItem.querySelector('.fill-layer-btn').addEventListener('click', handleFillLayerElements);
+            layerItem.querySelector('.random-layer-btn').addEventListener('click', handleRandomLayerElements);
             layerItem.querySelector('.clear-layer-btn').addEventListener('click', handleClearLayerElements);
             
             layerItem.querySelector('.remove-layer-btn').addEventListener('click', handleRemoveLayer);
@@ -1066,6 +1068,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const index = parseInt(event.target.dataset.index);
         const layer = appState.layers[index];
         layer.activeElements = layer.activeElements.map(() => true);
+        appState.lastInteractedLayerIndex = index; // Update last interacted
+        updateLayerElementButtons(index);
+        draw();
+    }
+
+
+    function handleRandomLayerElements(event) {
+        const index = parseInt(event.target.dataset.index);
+        const layer = appState.layers[index];
+        layer.activeElements = layer.activeElements.map(() => Math.random() < 0.5);
         appState.lastInteractedLayerIndex = index; // Update last interacted
         updateLayerElementButtons(index);
         draw();

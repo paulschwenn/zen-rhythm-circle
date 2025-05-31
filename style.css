@@ -498,7 +498,6 @@ a:active {
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
     z-index: 2000;
-    display: flex; /* Changed from justify-content/align-items to flex for direct control */
     justify-content: center;
     align-items: center;
     backdrop-filter: blur(3px);
