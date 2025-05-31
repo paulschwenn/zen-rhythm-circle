@@ -425,6 +425,22 @@ button.solo-layer-btn.active:hover {
     margin-top: auto; /* Help push Mute All and Fullscreen down */
 }
 
+/* --- Hyperlink Styles --- */
+a {
+    color: var(--accent-primary);
+    text-decoration: none;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:hover {
+    color: var(--accent-primary-hover);
+    text-decoration: underline;
+}
+
+a:active {
+    color: var(--accent-active);
+}
+
 
 /* Scrollbar styling for a more modern look (Webkit) */
 .controls-panel::-webkit-scrollbar,
@@ -444,4 +460,119 @@ button.solo-layer-btn.active:hover {
 .controls-panel::-webkit-scrollbar-thumb:hover,
 .tabs-content-container::-webkit-scrollbar-thumb:hover {
     background: var(--accent-primary);
+}
+
+/* --- Shortcuts Help Icon --- */
+#shortcuts-help-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 30px;
+    height: 30px;
+    background-color: rgba(var(--accent-primary-rgb, 76, 171, 174), 0.5); /* Use accent with alpha or a specific color */
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+    border-radius: 50%;
+    font-size: 18px;
+    font-weight: bold;
+    line-height: 28px; /* Adjust for vertical centering */
+    text-align: center;
+    cursor: pointer;
+    z-index: 1001;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    padding: 0; /* Remove default button padding */
+}
+
+#shortcuts-help-btn:hover {
+    background-color: var(--accent-primary); /* Solid on hover */
+    transform: scale(1.1);
+}
+
+/* --- Shortcuts Modal --- */
+.shortcuts-modal {
+    display: none; /* Hidden by default */
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6); /* Darker overlay */
+    z-index: 2000;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(3px);
+}
+
+.shortcuts-modal-content {
+    background-color: var(--bg-panel);
+    padding: 25px 30px;
+    border-radius: 8px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.4);
+    width: auto;
+    min-width: 350px;
+    max-width: 500px;
+    color: var(--text-primary);
+    position: relative; /* For close button positioning */
+}
+
+.shortcuts-modal-close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+}
+.shortcuts-modal-close:hover {
+    color: var(--text-primary);
+}
+
+.shortcuts-modal-content h3 {
+    color: var(--accent-primary);
+    margin-top: 0;
+    margin-bottom: 10px;
+    text-align: center;
+    font-size: 1.5em;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+.shortcuts-modal-content p.shortcuts-modal-info {
+    font-size: 0.85em;
+    color: var(--text-secondary);
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+.shortcuts-modal-content ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.shortcuts-modal-content li {
+    font-size: 0.95em;
+    margin-bottom: 10px;
+    padding-left: 15px;
+    position: relative;
+}
+
+.shortcuts-modal-content li::before {
+    content: "•"; /* Bullet point */
+    color: var(--accent-primary);
+    font-weight: bold;
+    display: inline-block;
+    position: absolute;
+    left: 0;
+    top: 0;
+}
+
+.shortcuts-modal-content li strong {
+    color: var(--accent-active);
+    font-weight: 500;
 }

@@ -49,6 +49,22 @@ Ever get lost in a jam trying to lock in a tricky polyrhythm? This tool helps yo
 4.  **Visuals Tab:** Customize dot appearance.
 5.  **Save/Load:** Use the pattern management controls to store and recall your creations.
 
+## Keyboard Shortcuts
+
+These shortcuts are active when not focused on an input field (like text boxes, number inputs, or select dropdowns).
+
+*   **`Spacebar`**: Play / Stop Rhythm
+*   **`Arrow Up`**: Add a new layer. The new layer becomes the "last interacted layer".
+*   **`Arrow Down`**: Remove the "last interacted layer". If no layer has been interacted with yet, it removes the actual last layer in the stack.
+*   **`Arrow Left`**: Decrease subdivisions for the "last interacted layer".
+*   **`Arrow Right`**: Increase subdivisions for the "last interacted layer".
+*   **`F`**: Fill all element steps for the "last interacted layer" (sets all to active).
+*   **`C`**: Clear all element steps for the "last interacted layer" (sets all to inactive).
+*   **`R`**: Randomize element steps for the "last interacted layer".
+*   **`Esc`**: Close the Shortcuts help modal if it's open.
+
+**Note on "Last Interacted Layer":** This refers to the layer whose controls (subdivisions, color, sound, or element buttons) were most recently modified, or the layer that was most recently added. Operations like changing subdivisions or filling/clearing elements via keyboard shortcuts will apply to this layer. Its panel in the UI might be highlighted (depending on future styling).
+
 ## Contributing
 
 This is an open-source project! Feel free to fork the repository, make improvements, or suggest features. Pull requests are welcome.

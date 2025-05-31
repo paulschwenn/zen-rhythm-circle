@@ -30,6 +30,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
 
+    // Modal elements
+    const shortcutsHelpBtn = document.getElementById('shortcuts-help-btn');
+    const shortcutsModal = document.getElementById('shortcuts-modal');
+    const shortcutsModalCloseBtn = shortcutsModal.querySelector('.shortcuts-modal-close');
+
+
     let audioCtx = null;
     let audioInitialized = false;
     let masterGainNode = null;
@@ -1448,6 +1454,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     activeElement.tagName === 'SELECT' // Added select
                 );
 
+                if (event.key === 'Escape' && shortcutsModal.style.display === 'flex') {
+                    shortcutsModal.style.display = 'none';
+                    return; // Prevent other escape key actions if modal was open
+                }
+
                 if (event.code === 'Space' && !isTextInputFocused) {
                     event.preventDefault(); 
                     handlePlayStop();
@@ -1534,6 +1545,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
             });
+
+            // Modal event listeners
+            if (shortcutsHelpBtn && shortcutsModal && shortcutsModalCloseBtn) {
+                shortcutsHelpBtn.addEventListener('click', () => {
+                    initAudioByUserGesture(); // Good practice if modal interaction might lead to audio
+                    shortcutsModal.style.display = 'flex';
+                });
+                shortcutsModalCloseBtn.addEventListener('click', () => {
+                    shortcutsModal.style.display = 'none';
+                });
+                shortcutsModal.addEventListener('click', (event) => {
+                    if (event.target === shortcutsModal) { // Click on overlay
+                        shortcutsModal.style.display = 'none';
+                    }
+                });
+            }
+
 
             // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
             // Or try to load the last used pattern name if available (more complex, not implemented here)
