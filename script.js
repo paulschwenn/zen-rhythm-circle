@@ -597,6 +597,8 @@ document.addEventListener('DOMContentLoaded', () => {
             layerItem.querySelectorAll(`#layerElements-${index} button`).forEach(btn => {
                 btn.addEventListener('mousedown', handleLayerElementMouseDown); // Changed from click to mousedown
                 btn.addEventListener('mouseenter', handleLayerElementMouseEnter);
+                btn.addEventListener('touchstart', handleLayerElementTouchStart, { passive: false });
+                btn.addEventListener('touchmove', handleLayerElementTouchMove, { passive: false });
             });
         });
         muteAllBtn.classList.toggle('active', appState.isGlobalMute);
@@ -625,6 +627,8 @@ document.addEventListener('DOMContentLoaded', () => {
             container.querySelectorAll('button').forEach(btn => {
                 btn.addEventListener('mousedown', handleLayerElementMouseDown); // Changed from click to mousedown
                 btn.addEventListener('mouseenter', handleLayerElementMouseEnter);
+                btn.addEventListener('touchstart', handleLayerElementTouchStart, { passive: false });
+                btn.addEventListener('touchmove', handleLayerElementTouchMove, { passive: false });
             });
         }
     }
@@ -772,10 +776,64 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function handleGlobalMouseUp() {
+    function handleLayerElementTouchStart(event) {
+        event.preventDefault(); // Prevent mouse event emulation and default touch actions
+        const touch = event.changedTouches[0];
+        const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+
+        if (targetElement && targetElement.matches('.layer-elements button')) {
+            const layerIndex = parseInt(targetElement.dataset.layerIndex);
+            const elIndex = parseInt(targetElement.dataset.elIndex);
+
+            appState.layers[layerIndex].activeElements[elIndex] = !appState.layers[layerIndex].activeElements[elIndex];
+            
+            appState.isDraggingElements = true;
+            appState.dragLayerIndex = layerIndex;
+            appState.dragTargetState = appState.layers[layerIndex].activeElements[elIndex];
+            
+            // Store the identifier of the touch initiating the drag
+            appState.dragTouchIdentifier = touch.identifier;
+
+            updateLayerElementButtons(layerIndex);
+            draw();
+        }
+    }
+
+    function handleLayerElementTouchMove(event) {
+        event.preventDefault(); // Prevent scrolling while dragging
+        if (!appState.isDraggingElements) return;
+
+        // Find the touch that initiated the drag
+        let activeTouch = null;
+        for (let i = 0; i < event.changedTouches.length; i++) {
+            if (event.changedTouches[i].identifier === appState.dragTouchIdentifier) {
+                activeTouch = event.changedTouches[i];
+                break;
+            }
+        }
+        if (!activeTouch) return; // Not the touch we are tracking for drag
+
+        const currentElement = document.elementFromPoint(activeTouch.clientX, activeTouch.clientY);
+
+        if (currentElement && currentElement.matches('.layer-elements button')) {
+            const layerIndex = parseInt(currentElement.dataset.layerIndex);
+            const elIndex = parseInt(currentElement.dataset.elIndex);
+
+            if (layerIndex === appState.dragLayerIndex) {
+                if (appState.layers[layerIndex].activeElements[elIndex] !== appState.dragTargetState) {
+                    appState.layers[layerIndex].activeElements[elIndex] = appState.dragTargetState;
+                    updateLayerElementButtons(layerIndex);
+                    draw();
+                }
+            }
+        }
+    }
+
+    function handleDragEnd() {
         if (appState.isDraggingElements) {
             appState.isDraggingElements = false;
             appState.dragLayerIndex = null;
+            appState.dragTouchIdentifier = null; 
             // dragTargetState can remain, it's not harmful
         }
     }
@@ -1069,7 +1127,9 @@ document.addEventListener('DOMContentLoaded', () => {
         loadPatternList(); // Load saved local patterns first
         
         // Add global mouseup listener
-        document.addEventListener('mouseup', handleGlobalMouseUp);
+        document.addEventListener('mouseup', handleDragEnd);
+        document.addEventListener('touchend', handleDragEnd);
+        document.addEventListener('touchcancel', handleDragEnd);
 
         // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
         // Or try to load the last used pattern name if available (more complex, not implemented here)
