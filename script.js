@@ -595,8 +595,9 @@ document.addEventListener('DOMContentLoaded', () => {
             layerItem.querySelector('.solo-layer-btn').addEventListener('click', handleSoloLayer);
             
             layerItem.querySelectorAll(`#layerElements-${index} button`).forEach(btn => {
-                btn.addEventListener('mousedown', handleLayerElementMouseDown); // Changed from click to mousedown
-                btn.addEventListener('mouseenter', handleLayerElementMouseEnter);
+                btn.addEventListener('mousedown', handleLayerElementInteractionStart);
+                btn.addEventListener('touchstart', handleLayerElementInteractionStart, { passive: false });
+                // mouseenter is now handled globally during drag
             });
         });
         muteAllBtn.classList.toggle('active', appState.isGlobalMute);
@@ -623,8 +624,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (container) {
             container.innerHTML = renderLayerElementButtons(layer, layerIndex);
             container.querySelectorAll('button').forEach(btn => {
-                btn.addEventListener('mousedown', handleLayerElementMouseDown); // Changed from click to mousedown
-                btn.addEventListener('mouseenter', handleLayerElementMouseEnter);
+                btn.addEventListener('mousedown', handleLayerElementInteractionStart);
+                btn.addEventListener('touchstart', handleLayerElementInteractionStart, { passive: false });
+                // mouseenter is now handled globally during drag
             });
         }
     }
@@ -741,11 +743,19 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
 
-    function handleLayerElementMouseDown(event) {
-        const layerIndex = parseInt(event.target.dataset.layerIndex);
-        const elIndex = parseInt(event.target.dataset.elIndex);
+    function handleLayerElementInteractionStart(event) {
+        let targetElement = event.target;
+        if (event.type === 'touchstart') {
+            targetElement = event.touches[0].target;
+            event.preventDefault(); // Prevent scrolling/zooming on touch
+        }
 
-        // Toggle the state of the clicked element
+        if (!targetElement.matches('.layer-elements button')) return;
+
+        const layerIndex = parseInt(targetElement.dataset.layerIndex);
+        const elIndex = parseInt(targetElement.dataset.elIndex);
+
+        // Toggle the state of the clicked/touched element
         appState.layers[layerIndex].activeElements[elIndex] = !appState.layers[layerIndex].activeElements[elIndex];
         
         // Start dragging
@@ -757,22 +767,35 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     }
 
-    function handleLayerElementMouseEnter(event) {
+    function handleLayerElementInteractionMove(event) {
         if (!appState.isDraggingElements) return;
 
-        const layerIndex = parseInt(event.target.dataset.layerIndex);
-        const elIndex = parseInt(event.target.dataset.elIndex);
+        let currentElement;
+        if (event.type === 'mousemove') {
+            currentElement = event.target;
+        } else if (event.type === 'touchmove') {
+            event.preventDefault(); // Prevent scrolling during drag
+            const touch = event.touches[0];
+            currentElement = document.elementFromPoint(touch.clientX, touch.clientY);
+        } else {
+            return;
+        }
 
-        if (layerIndex === appState.dragLayerIndex) {
-            if (appState.layers[layerIndex].activeElements[elIndex] !== appState.dragTargetState) {
-                appState.layers[layerIndex].activeElements[elIndex] = appState.dragTargetState;
-                updateLayerElementButtons(layerIndex); // Update all buttons in this layer
-                draw();
+        if (currentElement && currentElement.matches('.layer-elements button') && currentElement.dataset.layerIndex) {
+            const layerIndex = parseInt(currentElement.dataset.layerIndex);
+            const elIndex = parseInt(currentElement.dataset.elIndex);
+
+            if (layerIndex === appState.dragLayerIndex) {
+                if (appState.layers[layerIndex].activeElements[elIndex] !== appState.dragTargetState) {
+                    appState.layers[layerIndex].activeElements[elIndex] = appState.dragTargetState;
+                    updateLayerElementButtons(layerIndex); // Update all buttons in this layer
+                    draw();
+                }
             }
         }
     }
 
-    function handleGlobalMouseUp() {
+    function handleGlobalInteractionEnd() {
         if (appState.isDraggingElements) {
             appState.isDraggingElements = false;
             appState.dragLayerIndex = null;
@@ -1068,8 +1091,14 @@ document.addEventListener('DOMContentLoaded', () => {
     function init() {
         loadPatternList(); // Load saved local patterns first
         
-        // Add global mouseup listener
-        document.addEventListener('mouseup', handleGlobalMouseUp);
+        // Add global interaction listeners
+        document.addEventListener('mouseup', handleGlobalInteractionEnd);
+        document.addEventListener('touchend', handleGlobalInteractionEnd);
+        document.addEventListener('touchcancel', handleGlobalInteractionEnd);
+        
+        document.addEventListener('mousemove', handleLayerElementInteractionMove);
+        document.addEventListener('touchmove', handleLayerElementInteractionMove, { passive: false });
+
 
         // Load a default pattern if no layers exist (e.g., first run or after clearing localStorage)
         // Or try to load the last used pattern name if available (more complex, not implemented here)
