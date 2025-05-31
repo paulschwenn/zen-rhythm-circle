@@ -1455,6 +1455,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     handlePlayStop();
                 } else if (!isTextInputFocused) {
                     // Other keyboard shortcuts
+                    const lastInteractedLayerIndex = appState.lastInteractedLayerIndex;
+                    const hasInteractedLayer = lastInteractedLayerIndex !== null && lastInteractedLayerIndex < appState.layers.length;
+
                     switch (event.code) {
                         case 'ArrowUp':
                             event.preventDefault();
@@ -1501,6 +1504,33 @@ document.addEventListener('DOMContentLoaded', () => {
                                     draw();
                                     renderLayersControls(); // To update .last-interacted class if needed
                                 }
+                            }
+                            break;
+                        case 'KeyF': // Fill layer
+                            event.preventDefault();
+                            if (hasInteractedLayer) {
+                                const layer = appState.layers[lastInteractedLayerIndex];
+                                layer.activeElements = layer.activeElements.map(() => true);
+                                updateLayerElementButtons(lastInteractedLayerIndex);
+                                draw();
+                            }
+                            break;
+                        case 'KeyC': // Clear layer
+                            event.preventDefault();
+                            if (hasInteractedLayer) {
+                                const layer = appState.layers[lastInteractedLayerIndex];
+                                layer.activeElements = layer.activeElements.map(() => false);
+                                updateLayerElementButtons(lastInteractedLayerIndex);
+                                draw();
+                            }
+                            break;
+                        case 'KeyR': // Randomize layer
+                            event.preventDefault();
+                            if (hasInteractedLayer) {
+                                const layer = appState.layers[lastInteractedLayerIndex];
+                                layer.activeElements = layer.activeElements.map(() => Math.random() < 0.5);
+                                updateLayerElementButtons(lastInteractedLayerIndex);
+                                draw();
                             }
                             break;
                     }
