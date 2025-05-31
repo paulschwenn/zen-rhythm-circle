@@ -914,6 +914,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             updateLayerElementButtons(layerIndex);
             draw();
+        } else {
+            // If no interactive element was touched (empty area), toggle play/stop
+            handlePlayStop();
         }
     }
 
@@ -1030,6 +1033,9 @@ document.addEventListener('DOMContentLoaded', () => {
             
             updateLayerElementButtons(layerIndex);
             draw();
+        } else {
+            // If no interactive element was touched (empty area), toggle play/stop
+            handlePlayStop();
         }
     }
 
