@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const dotBaseSizeFactorInput = document.getElementById('dotBaseSizeFactorInput');
     const dotPopMagnitudeInput = document.getElementById('dotPopMagnitudeInput');
     const showGhostElementsInput = document.getElementById('showGhostElementsInput'); // Added
+    const ghostNoteScaleFactorInput = document.getElementById('ghostNoteScaleFactorInput'); // Added
 
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -402,6 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dotBaseSizeFactor: 0.02, 
         dotPopMagnitude: 1.5,
         showGhostElements: false, // Added for ghost elements
+        ghostNoteScaleFactor: 0.4, // Added for ghost note size scaling
         // Dragging state for layer elements
         isDraggingElements: false,
         dragLayerIndex: null,
@@ -478,7 +480,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (appState.showGhostElements) {
                     // Draw ghost element for inactive subdivisions if enabled
                     ctx.beginPath();
-                    const ghostDotSize = dotBaseSize * 0.4; // Smaller size for ghost
+                    const ghostDotSize = dotBaseSize * appState.ghostNoteScaleFactor; // Use scale factor
                     ctx.arc(x, y, ghostDotSize, 0, Math.PI * 2);
                     // Use layer color with low opacity for ghost
                     // Convert hex to rgba or use a fixed ghost color
@@ -951,7 +953,8 @@ document.addEventListener('DOMContentLoaded', () => {
             })),
             dotBaseSizeFactor: appState.dotBaseSizeFactor,
             dotPopMagnitude: appState.dotPopMagnitude,
-            showGhostElements: appState.showGhostElements // Added
+            showGhostElements: appState.showGhostElements, // Added
+            ghostNoteScaleFactor: appState.ghostNoteScaleFactor // Added
         };
     }
 
@@ -1001,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.dotBaseSizeFactor = patternData.dotBaseSizeFactor || 0.02;
         appState.dotPopMagnitude = patternData.dotPopMagnitude || 1.5;
         appState.showGhostElements = patternData.showGhostElements || false; // Added, default to false
+        appState.ghostNoteScaleFactor = patternData.ghostNoteScaleFactor || 0.4; // Added, default to 0.4
 
         patternNameInput.value = appState.patternName;
         mainRegisterInput.value = appState.bpm;
@@ -1009,6 +1013,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
         showGhostElementsInput.checked = appState.showGhostElements; // Added
+        ghostNoteScaleFactorInput.value = appState.ghostNoteScaleFactor; // Added
 
         renderLayersControls();
         draw();
@@ -1174,6 +1179,16 @@ document.addEventListener('DOMContentLoaded', () => {
         draw();
     });
 
+    ghostNoteScaleFactorInput.addEventListener('change', (e) => { // Added
+        const val = parseFloat(e.target.value);
+        if (val >= 0.1 && val <= 1.0) {
+            appState.ghostNoteScaleFactor = val;
+            draw();
+        } else {
+            e.target.value = appState.ghostNoteScaleFactor;
+        }
+    });
+
     fullscreenBtn.addEventListener('click', () => {
         initAudioByUserGesture();
         toggleFullscreen();
@@ -1224,6 +1239,7 @@ document.addEventListener('DOMContentLoaded', () => {
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
         showGhostElementsInput.checked = appState.showGhostElements; // Added
+        ghostNoteScaleFactorInput.value = appState.ghostNoteScaleFactor; // Added
         
         // Set initial state for Play/Stop button
         playStopBtn.textContent = appState.isPlaying ? 'Stop Rhythm' : 'Play Rhythm';
