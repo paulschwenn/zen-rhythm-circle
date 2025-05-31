@@ -411,7 +411,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Dragging state for layer elements
         isDraggingElements: false,
         dragLayerIndex: null,
-        dragTargetState: false 
+        dragTargetState: false,
+        lastInteractedLayerIndex: null // Added for keyboard shortcuts
     };
 
     const MAX_POP_DURATION = 0.15;
@@ -583,6 +584,9 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.layers.forEach((layer, index) => {
             const layerItem = document.createElement('div');
             layerItem.classList.add('layer-item');
+            if (index === appState.lastInteractedLayerIndex) {
+                layerItem.classList.add('last-interacted'); // Optional: for styling
+            }
 
             let soundOptionsHtml = '';
             soundProfiles.forEach((profile, profileIndex) => {
@@ -735,13 +739,37 @@ document.addEventListener('DOMContentLoaded', () => {
         while (newLayer.activeElements.length < newLayer.subdivisions) newLayer.activeElements.push(false);
         newLayer.activeElements.length = newLayer.subdivisions; 
         appState.layers.push(newLayer);
+        appState.lastInteractedLayerIndex = appState.layers.length - 1; // Update last interacted
         renderLayersControls();
     }
 
-    function handleRemoveLayer(event) {
-        const index = parseInt(event.target.dataset.index);
-        appState.layers.splice(index, 1);
+    function handleRemoveLayer(eventOrIndex) {
+        let indexToRemove;
+        if (typeof eventOrIndex === 'number') {
+            indexToRemove = eventOrIndex;
+        } else {
+            indexToRemove = parseInt(eventOrIndex.target.dataset.index);
+        }
+
+        if (indexToRemove < 0 || indexToRemove >= appState.layers.length) return;
+
+        appState.layers.splice(indexToRemove, 1);
+
+        if (appState.layers.length === 0) {
+            appState.lastInteractedLayerIndex = null;
+        } else {
+            if (appState.lastInteractedLayerIndex === indexToRemove) {
+                // If the removed layer was the last interacted one,
+                // set to the new layer at that index, or the new last layer.
+                appState.lastInteractedLayerIndex = Math.min(indexToRemove, appState.layers.length - 1);
+            } else if (appState.lastInteractedLayerIndex > indexToRemove) {
+                // If a layer before the lastInteractedLayer was removed, decrement its index.
+                appState.lastInteractedLayerIndex--;
+            }
+            // If lastInteractedLayerIndex < indexToRemove, it's still valid.
+        }
         renderLayersControls();
+        draw(); // Ensure canvas updates if layers change
     }
 
     function handleLayerSubdivisionsChange(event) {
@@ -755,6 +783,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 newActive.push(i < currentActive.length ? currentActive[i] : false);
             }
             appState.layers[index].activeElements = newActive;
+            appState.lastInteractedLayerIndex = index; // Update last interacted
             updateLayerElementButtons(index);
             draw();
         } else {
@@ -765,6 +794,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleLayerColorChange(event) {
         const index = parseInt(event.target.dataset.index);
         appState.layers[index].color = event.target.value;
+        appState.lastInteractedLayerIndex = index; // Update last interacted
         updateLayerElementButtons(index); // Re-render buttons to apply new color
         // No need to call draw() here if updateLayerElementButtons doesn't change visual state that draw() depends on beyond button appearance
         draw(); // Keep draw if layer color itself is used in canvas drawing directly, which it is.
@@ -773,6 +803,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function handleLayerSoundChange(event) {
         const index = parseInt(event.target.dataset.index);
         appState.layers[index].soundProfileIndex = parseInt(event.target.value);
+        appState.lastInteractedLayerIndex = index; // Update last interacted
     }
 
     function handleLayerElementToggle(event) {
@@ -780,6 +811,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const elIndex = parseInt(event.target.dataset.elIndex);
         appState.layers[layerIndex].activeElements[elIndex] = !appState.layers[layerIndex].activeElements[elIndex];
         // event.target.classList.toggle('active'); // This will be handled by updateLayerElementButtons
+        appState.lastInteractedLayerIndex = layerIndex; // Update last interacted
         updateLayerElementButtons(layerIndex); // Re-render buttons for this layer
         draw();
     }
@@ -795,6 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
         appState.isDraggingElements = true;
         appState.dragLayerIndex = layerIndex;
         appState.dragTargetState = appState.layers[layerIndex].activeElements[elIndex];
+        appState.lastInteractedLayerIndex = layerIndex; // Update last interacted
 
         updateLayerElementButtons(layerIndex); // Update all buttons in this layer
         draw();
@@ -829,6 +862,7 @@ document.addEventListener('DOMContentLoaded', () => {
             appState.isDraggingElements = true;
             appState.dragLayerIndex = layerIndex;
             appState.dragTargetState = appState.layers[layerIndex].activeElements[elIndex];
+            appState.lastInteractedLayerIndex = layerIndex; // Update last interacted
             
             // Store the identifier of the touch initiating the drag
             appState.dragTouchIdentifier = touch.identifier;
@@ -912,6 +946,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (distance <= dotClickableRadius) {
                     // Toggle the element's state
                     layer.activeElements[i] = !layer.activeElements[i];
+                    appState.lastInteractedLayerIndex = layerIdx; // Update last interacted
                     
                     // Update the UI controls for this layer
                     updateLayerElementButtons(layerIdx);
@@ -930,6 +965,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const index = parseInt(event.target.dataset.index);
         const layer = appState.layers[index];
         layer.activeElements = layer.activeElements.map(() => true);
+        appState.lastInteractedLayerIndex = index; // Update last interacted
         updateLayerElementButtons(index);
         draw();
     }
@@ -938,6 +974,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const index = parseInt(event.target.dataset.index);
         const layer = appState.layers[index];
         layer.activeElements = layer.activeElements.map(() => false);
+        appState.lastInteractedLayerIndex = index; // Update last interacted
         updateLayerElementButtons(index);
         draw();
     }
@@ -949,6 +986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (layer.isMuted) {
             layer.isSoloed = false;
         }
+        appState.lastInteractedLayerIndex = index; // Update last interacted
         renderLayersControls();
     }
 
@@ -966,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         }
+        appState.lastInteractedLayerIndex = index; // Update last interacted
         renderLayersControls();
     }
     
@@ -1302,19 +1341,69 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Add global keydown listener for space bar play/stop
             document.addEventListener('keydown', (event) => {
-                if (event.code === 'Space') {
-                // Only handle play/stop if focus is not in a text input
+                // Check if focus is in a text input or textarea
                 const activeElement = document.activeElement;
-                const isTextInput = activeElement && (
+                const isTextInputFocused = activeElement && (
                     activeElement.tagName === 'INPUT' && 
-                    (activeElement.type === 'text' || activeElement.type === 'number') ||
-                    activeElement.tagName === 'TEXTAREA'
+                    (activeElement.type === 'text' || activeElement.type === 'number' || activeElement.type === 'color') || // Added color type
+                    activeElement.tagName === 'TEXTAREA' ||
+                    activeElement.tagName === 'SELECT' // Added select
                 );
-                
-                if (!isTextInput) {
-                    event.preventDefault(); // Prevent default space bar action (e.g., scrolling)
+
+                if (event.code === 'Space' && !isTextInputFocused) {
+                    event.preventDefault(); 
                     handlePlayStop();
-                }
+                } else if (!isTextInputFocused) {
+                    // Other keyboard shortcuts
+                    switch (event.code) {
+                        case 'ArrowUp':
+                            event.preventDefault();
+                            handleAddLayer();
+                            break;
+                        case 'ArrowDown':
+                            event.preventDefault();
+                            if (appState.layers.length > 0) {
+                                let layerToRemoveIndex = appState.lastInteractedLayerIndex;
+                                if (layerToRemoveIndex === null || layerToRemoveIndex >= appState.layers.length) {
+                                    layerToRemoveIndex = appState.layers.length - 1; // Default to actual last layer
+                                }
+                                handleRemoveLayer(layerToRemoveIndex);
+                            }
+                            break;
+                        case 'ArrowLeft':
+                        case 'ArrowRight':
+                            event.preventDefault();
+                            if (appState.lastInteractedLayerIndex !== null && appState.lastInteractedLayerIndex < appState.layers.length) {
+                                const layer = appState.layers[appState.lastInteractedLayerIndex];
+                                let newSubdivisions = layer.subdivisions;
+                                if (event.code === 'ArrowLeft') {
+                                    newSubdivisions = Math.max(1, newSubdivisions - 1);
+                                } else {
+                                    newSubdivisions = Math.min(64, newSubdivisions + 1);
+                                }
+
+                                if (newSubdivisions !== layer.subdivisions) {
+                                    layer.subdivisions = newSubdivisions;
+                                    const currentActive = layer.activeElements;
+                                    const newActive = [];
+                                    for (let i = 0; i < newSubdivisions; i++) {
+                                        newActive.push(i < currentActive.length ? currentActive[i] : false);
+                                    }
+                                    layer.activeElements = newActive;
+                                    
+                                    // Update the input field in the UI
+                                    const subDivInput = document.getElementById(`layerSubdivisions-${appState.lastInteractedLayerIndex}`);
+                                    if (subDivInput) {
+                                        subDivInput.value = newSubdivisions;
+                                    }
+                                    
+                                    updateLayerElementButtons(appState.lastInteractedLayerIndex);
+                                    draw();
+                                    renderLayersControls(); // To update .last-interacted class if needed
+                                }
+                            }
+                            break;
+                    }
                 }
             });
 
@@ -1322,11 +1411,15 @@ document.addEventListener('DOMContentLoaded', () => {
             // Or try to load the last used pattern name if available (more complex, not implemented here)
             if (appState.layers.length === 0) {
                  handleAddLayer(); // Add one layer
-             if(appState.layers.length > 0){
+             if(appState.layers.length > 0){ // This check is now redundant due to handleAddLayer setting it
                 appState.layers[0].subdivisions = 8;
                 appState.layers[0].activeElements = [true,false,true,false,true,false,true,false];
                 appState.layers[0].soundProfileIndex = 0; 
+                // appState.lastInteractedLayerIndex = 0; // Already set by handleAddLayer
              }
+        } else if (appState.lastInteractedLayerIndex === null && appState.layers.length > 0) {
+            // If layers exist but no lastInteractedLayerIndex (e.g. from loaded pattern), set to first layer
+            appState.lastInteractedLayerIndex = 0;
         }
         
         // Set initial values from appState (which might have been populated by a loaded pattern or defaults)
