@@ -22,6 +22,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const dotBaseSizeFactorInput = document.getElementById('dotBaseSizeFactorInput');
     const dotPopMagnitudeInput = document.getElementById('dotPopMagnitudeInput');
+    const baseRadiusFactorInput = document.getElementById('baseRadiusFactorInput'); // Added
+    const maxRadiusFactorInput = document.getElementById('maxRadiusFactorInput'); // Added
     const showGhostElementsInput = document.getElementById('showGhostElementsInput'); // Added
     const ghostNoteScaleFactorInput = document.getElementById('ghostNoteScaleFactorInput'); // Added
 
@@ -402,6 +404,8 @@ document.addEventListener('DOMContentLoaded', () => {
         isGlobalMute: false,
         dotBaseSizeFactor: 0.02, 
         dotPopMagnitude: 1.5,
+        baseRadiusFactor: 0.2, // Added
+        maxRadiusFactor: 0.42, // Added
         showGhostElements: false, // Added for ghost elements
         ghostNoteScaleFactor: 0.4, // Added for ghost note size scaling
         // Dragging state for layer elements
@@ -440,8 +444,8 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const centerX = canvas.width / 2;
         const centerY = canvas.height / 2;
-        const baseRadius = canvas.width * 0.2;
-        const maxRadius = canvas.width * 0.42;
+        const baseRadius = canvas.width * appState.baseRadiusFactor; // Updated
+        const maxRadius = canvas.width * appState.maxRadiusFactor; // Updated
         const radiusStep = appState.layers.length > 1 ? (maxRadius - baseRadius) / (appState.layers.length -1) : 0;
         const handLength = maxRadius * 1.05;
         const dotBaseSize = Math.max(2, canvas.width * appState.dotBaseSizeFactor);
@@ -953,6 +957,8 @@ document.addEventListener('DOMContentLoaded', () => {
             })),
             dotBaseSizeFactor: appState.dotBaseSizeFactor,
             dotPopMagnitude: appState.dotPopMagnitude,
+            baseRadiusFactor: appState.baseRadiusFactor, // Added
+            maxRadiusFactor: appState.maxRadiusFactor, // Added
             showGhostElements: appState.showGhostElements, // Added
             ghostNoteScaleFactor: appState.ghostNoteScaleFactor // Added
         };
@@ -1003,6 +1009,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         appState.dotBaseSizeFactor = patternData.dotBaseSizeFactor || 0.02;
         appState.dotPopMagnitude = patternData.dotPopMagnitude || 1.5;
+        appState.baseRadiusFactor = patternData.baseRadiusFactor || 0.2; // Added
+        appState.maxRadiusFactor = patternData.maxRadiusFactor || 0.42; // Added
         appState.showGhostElements = patternData.showGhostElements || false; // Added, default to false
         appState.ghostNoteScaleFactor = patternData.ghostNoteScaleFactor || 0.4; // Added, default to 0.4
 
@@ -1012,6 +1020,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
+        baseRadiusFactorInput.value = appState.baseRadiusFactor; // Added
+        maxRadiusFactorInput.value = appState.maxRadiusFactor; // Added
         showGhostElementsInput.checked = appState.showGhostElements; // Added
         ghostNoteScaleFactorInput.value = appState.ghostNoteScaleFactor; // Added
 
@@ -1174,6 +1184,40 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    baseRadiusFactorInput.addEventListener('change', (e) => { // Added
+        let val = parseFloat(e.target.value);
+        const minVal = parseFloat(e.target.min);
+        const maxVal = parseFloat(e.target.max);
+
+        if (val >= minVal && val <= maxVal) {
+            if (val >= appState.maxRadiusFactor) {
+                val = appState.maxRadiusFactor - 0.01; // Ensure base is smaller than max
+                e.target.value = val.toFixed(2);
+            }
+            appState.baseRadiusFactor = val;
+            draw();
+        } else {
+            e.target.value = appState.baseRadiusFactor;
+        }
+    });
+
+    maxRadiusFactorInput.addEventListener('change', (e) => { // Added
+        let val = parseFloat(e.target.value);
+        const minVal = parseFloat(e.target.min);
+        const maxVal = parseFloat(e.target.max);
+
+        if (val >= minVal && val <= maxVal) {
+            if (val <= appState.baseRadiusFactor) {
+                val = appState.baseRadiusFactor + 0.01; // Ensure max is larger than base
+                e.target.value = val.toFixed(2);
+            }
+            appState.maxRadiusFactor = val;
+            draw();
+        } else {
+            e.target.value = appState.maxRadiusFactor;
+        }
+    });
+
     showGhostElementsInput.addEventListener('change', (e) => { // Added
         appState.showGhostElements = e.target.checked;
         draw();
@@ -1238,6 +1282,8 @@ document.addEventListener('DOMContentLoaded', () => {
         beatsPerCycleInput.value = appState.beatsPerCycle;
         dotBaseSizeFactorInput.value = appState.dotBaseSizeFactor;
         dotPopMagnitudeInput.value = appState.dotPopMagnitude;
+        baseRadiusFactorInput.value = appState.baseRadiusFactor; // Added
+        maxRadiusFactorInput.value = appState.maxRadiusFactor; // Added
         showGhostElementsInput.checked = appState.showGhostElements; // Added
         ghostNoteScaleFactorInput.value = appState.ghostNoteScaleFactor; // Added
         
