@@ -831,19 +831,57 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleLayerSubdivisionsChange(event) {
         const index = parseInt(event.target.dataset.index);
-        const newValue = parseInt(event.target.value);
-        if (newValue > 0 && newValue <= 64) {
-            appState.layers[index].subdivisions = newValue;
-            const currentActive = appState.layers[index].activeElements;
-            const newActive = [];
-            for (let i = 0; i < newValue; i++) {
-                newActive.push(i < currentActive.length ? currentActive[i] : false);
+        const newSubdivisions = parseInt(event.target.value);
+
+        if (newSubdivisions > 0 && newSubdivisions <= 64) {
+            const layer = appState.layers[index];
+            const oldSubdivisions = layer.subdivisions;
+            const oldActiveElements = [...layer.activeElements]; // Copy of current active elements
+            let newActiveElements = [];
+
+            if (newSubdivisions === oldSubdivisions) {
+                // No change, keep existing active elements
+                newActiveElements = oldActiveElements;
+            } else if (newSubdivisions > oldSubdivisions && newSubdivisions % oldSubdivisions === 0) {
+                // Increasing subdivisions, new is an integer multiple of old
+                const factor = newSubdivisions / oldSubdivisions;
+                newActiveElements = Array(newSubdivisions).fill(false);
+                for (let i = 0; i < newSubdivisions; i++) {
+                    if (i % factor === 0) {
+                        const oldIndex = i / factor;
+                        if (oldIndex < oldActiveElements.length) {
+                            newActiveElements[i] = oldActiveElements[oldIndex];
+                        }
+                    }
+                }
+            } else if (newSubdivisions < oldSubdivisions && oldSubdivisions % newSubdivisions === 0) {
+                // Decreasing subdivisions, old is an integer multiple of new
+                const factor = oldSubdivisions / newSubdivisions;
+                newActiveElements = Array(newSubdivisions).fill(false);
+                for (let i = 0; i < newSubdivisions; i++) {
+                    const oldIndex = i * factor;
+                    if (oldIndex < oldActiveElements.length) {
+                        newActiveElements[i] = oldActiveElements[oldIndex];
+                    }
+                }
+            } else {
+                // Fallback: Truncate or pad with false (original behavior for non-integer scaling)
+                newActiveElements = Array(newSubdivisions).fill(false);
+                for (let i = 0; i < newSubdivisions; i++) {
+                    if (i < oldActiveElements.length) {
+                        newActiveElements[i] = oldActiveElements[i];
+                    }
+                    // Elements beyond old length are already false due to fill(false)
+                }
             }
-            appState.layers[index].activeElements = newActive;
-            appState.lastInteractedLayerIndex = index; // Update last interacted
+
+            layer.subdivisions = newSubdivisions;
+            layer.activeElements = newActiveElements;
+            appState.lastInteractedLayerIndex = index;
             updateLayerElementButtons(index);
             draw();
         } else {
+            // Reset input value if it's invalid
             event.target.value = appState.layers[index].subdivisions;
         }
     }
